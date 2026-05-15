@@ -2,15 +2,14 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <!-- Permissions -->
-    <uses-permission android:name="android.permission.ACTIVITY_RECOGNITION"/>
-    <uses-permission android:name="android.permission.BODY_SENSORS"/>
+
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
     <uses-permission android:name="android.permission.VIBRATE"/>
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <uses-permission android:name="android.permission.INTERNET"/>
 
     <application
-        android:label="FitAura"
+        android:label="HabitFlow"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
 
@@ -29,13 +28,7 @@
             </intent-filter>
         </activity>
 
-        <!-- Step counter service -->
-        <receiver android:name="io.flutter.plugins.pedometer.PedometerPlugin$BootReceiver"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.BOOT_COMPLETED"/>
-            </intent-filter>
-        </receiver>
+   
 
         <meta-data android:name="flutterEmbedding" android:value="2"/>
     </application>
