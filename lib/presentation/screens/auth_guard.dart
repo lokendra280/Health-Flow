@@ -6,7 +6,6 @@ import 'package:habitflow/presentation/providers/providers.dart';
 import 'package:habitflow/presentation/screens/home_shell.dart';
 import 'package:habitflow/presentation/screens/sign_in_screen.dart';
 
-
 class AuthGuard extends ConsumerWidget {
   const AuthGuard({super.key});
 

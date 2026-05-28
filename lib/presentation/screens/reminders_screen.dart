@@ -575,6 +575,7 @@ class _AddReminderSheetState extends ConsumerState<AddReminderSheet> {
                 ),
               ),
             ),
+           
             const Gap(20),
 
             // ── Frequency ─────────────────────────────────

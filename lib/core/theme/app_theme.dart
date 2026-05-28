@@ -156,6 +156,10 @@ extension ThemeX on BuildContext {
   Color get border2 =>
       isDark ? const Color(0x1FFFFFFF) : const Color(0x24000000);
   Color get accent => isDark ? AppColors.green500 : AppColors.green700;
+  Color get red => isDark
+      ? const Color.fromARGB(255, 211, 111, 23)
+      : const Color(0xFFDC2626);
+
   Color get accentSurf => isDark ? const Color(0xFF1B4332) : AppColors.green100;
   Color get accentText => isDark ? const Color(0xFF95D5B2) : AppColors.green900;
   Color get pillBg =>

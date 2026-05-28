@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_native_timezone/flutter_native_timezone.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:habitflow/core/constants/supabase_config.dart';
 import 'package:habitflow/data/repositories/challenge_repository.dart';
@@ -8,9 +9,11 @@ import 'package:habitflow/data/repositories/reminder_repository.dart';
 import 'package:habitflow/presentation/providers/providers.dart';
 import 'package:habitflow/presentation/screens/auth_guard.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-
+import 'package:timezone/data/latest.dart';
+import 'package:timezone/timezone.dart' as tz;
 import 'core/theme/app_theme.dart';
 import 'core/utils/notification_service.dart';
+import 'package:timezone/data/latest.dart' as tz;
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  ENTRY POINT
@@ -26,6 +29,11 @@ Future<void> main() async {
   await HabitRepository.init(); // Hive + Phase1 adapters
   await ReminderRepository.init(); // Phase2 adapters
   await ChallengeRepository.init();
+  tz.initializeTimeZones();
+
+  final String timeZoneName = await FlutterNativeTimezone.getLocalTimezone();
+
+  tz.setLocalLocation(tz.getLocation(timeZoneName));
 
   // Init notifications
   await NotificationService.init();

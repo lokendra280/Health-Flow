@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:gap/gap.dart';
+import 'package:habitflow/core/common_widget/common_svg.dart';
+import 'package:habitflow/core/constants/constant_assets.dart';
 import 'package:habitflow/core/theme/app_theme.dart';
 import 'package:habitflow/domain/entities/entities.dart';
 import 'package:habitflow/presentation/providers/providers.dart';
@@ -195,20 +197,23 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                         childAspectRatio: 1.6,
                         children: [
                           _StatCard(
-                              emoji: '📋',
+                              emoji: Assets.habit,
                               label: 'Total Habits',
+                              color: context.accent,
                               value: '${habits.length}'),
                           _StatCard(
-                              emoji: '🔥',
+                              emoji: Assets.strike,
                               label: 'Current Streak',
+                              color: context.red,
                               value: '${overall}d'),
                           _StatCard(
-                              emoji: '🏆',
+                              emoji: Assets.trophy,
                               label: 'Longest Streak',
                               value: '${longest}d'),
                           _StatCard(
-                              emoji: '✅',
+                              emoji: Assets.done,
                               label: 'Done Today',
+                              color: context.accent,
                               value: '${progress.done}/${progress.total}'),
                         ],
                       ),
@@ -492,32 +497,59 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
 // ─── Stat Card ────────────────────────────────────────────────────────────────
 class _StatCard extends StatelessWidget {
   final String emoji, label, value;
+  final Color? color;
   const _StatCard({
     required this.emoji,
     required this.label,
     required this.value,
+    this.color,
   });
+
   @override
-  Widget build(BuildContext ctx) => Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: ctx.surfaceColor,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: ctx.borderColor, width: 1.5),
+  Widget build(BuildContext ctx) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: ctx.surfaceColor,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: ctx.borderColor,
+          width: 1.5,
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Text(emoji, style: const TextStyle(fontSize: 22)),
-            const Gap(6),
-            Text(value, style: ctx.syne(20, FontWeight.w800)),
-            Text(label,
-                style:
-                    ctx.dmSans(11, FontWeight.w400, color: ctx.textTertiary)),
-          ],
-        ),
-      );
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          CommonSvgWidget(svgName: emoji, height: 22, width: 22, color: color),
+          const SizedBox(height: 6),
+          Flexible(
+            child: FittedBox(
+              fit: BoxFit.scaleDown,
+              alignment: Alignment.centerLeft,
+              child: Text(
+                value,
+                style: ctx.syne(20, FontWeight.w800),
+                maxLines: 1,
+              ),
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: ctx.dmSans(
+              11,
+              FontWeight.w400,
+              color: ctx.textTertiary,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 // ─── Action Tile ──────────────────────────────────────────────────────────────

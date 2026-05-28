@@ -64,7 +64,10 @@ class NotificationService {
   // ── Permission ────────────────────────────────────────────────────────────
   static Future<bool> requestPermission() async {
     bool granted = false;
-
+    await _plugin
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>()
+        ?.requestExactAlarmsPermission();
     final iosResult = await _plugin
         .resolvePlatformSpecificImplementation<
             IOSFlutterLocalNotificationsPlugin>()
@@ -81,9 +84,12 @@ class NotificationService {
   }
 
   static Future<bool> arePermissionsGranted() async {
-    final pending = await _plugin.pendingNotificationRequests();
-    // If we can get pending, we have permission (rough check)
-    return true;
+    final android = _plugin.resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin>();
+
+    final granted = await android?.areNotificationsEnabled();
+
+    return granted ?? false;
   }
 
   // ── Schedule a reminder ───────────────────────────────────────────────────
@@ -227,7 +233,9 @@ class NotificationService {
 
   static tz.TZDateTime _nextOccurrence(TimeOfDay time, int weekday) {
     final now = tz.TZDateTime.now(tz.local);
-    var target = tz.TZDateTime(
+
+    // Start from NOW (not today base time)
+    tz.TZDateTime scheduled = tz.TZDateTime(
       tz.local,
       now.year,
       now.month,
@@ -235,10 +243,17 @@ class NotificationService {
       time.hour,
       time.minute,
     );
-    // Advance day until we hit the right weekday in the future
-    while (target.weekday != weekday || target.isBefore(now)) {
-      target = target.add(const Duration(days: 1));
+
+    // If time already passed today → move to next day first
+    if (scheduled.isBefore(now)) {
+      scheduled = scheduled.add(const Duration(days: 1));
     }
-    return target;
+
+    // Then adjust weekday safely
+    while (scheduled.weekday != weekday) {
+      scheduled = scheduled.add(const Duration(days: 1));
+    }
+
+    return scheduled;
   }
 }
