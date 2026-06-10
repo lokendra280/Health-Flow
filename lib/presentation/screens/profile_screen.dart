@@ -44,6 +44,7 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
     final longest = ref.watch(longestEverProvider);
     final overall = ref.watch(overallStreakProvider);
     final progress = ref.watch(progressProvider);
+    final auth = ref.watch(authStateProvider);
 
     if (user == null) return const SizedBox.shrink();
 
@@ -483,7 +484,9 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
                   style: context.dmSans(14, FontWeight.w400,
                       color: context.textSecondary))),
           TextButton(
-            onPressed: () => Navigator.pop(ctx), // placeholder
+            onPressed: () {
+              ref.watch(authServiceProvider).deleteAccount();
+            }, // placeholder
             child: Text('Delete Forever',
                 style: context.dmSans(14, FontWeight.w700,
                     color: AppColors.coral700)),

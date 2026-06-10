@@ -30,6 +30,17 @@ class AuthService {
     return _mapUser(res.user!);
   }
 
+  Future<AppUser> deleteAccount() async {
+    final uid = currentUser?.id;
+    if (uid == null) throw Exception('Not signed in');
+    // remove profile row from the database
+    await _client.from('profiles').delete().eq('id', uid);
+    // Deleting the auth user record requires a secure server-side call with the service_role key.
+    // Throw to indicate that the client cannot complete the full account deletion.
+    throw UnimplementedError(
+        'Deleting the auth user must be done from a secure server with the service_role key.');
+  }
+
   Future<AppUser> signIn(
       {required String email, required String password}) async {
     final res =
