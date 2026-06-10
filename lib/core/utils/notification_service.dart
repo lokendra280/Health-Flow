@@ -5,15 +5,6 @@ import 'package:habitflow/domain/entities/entities.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  NOTIFICATION SERVICE
-//  Wraps flutter_local_notifications for exact-time habit reminders.
-//  Supports: daily / weekdays / weekends / custom day-of-week schedules.
-// ─────────────────────────────────────────────────────────────────────────────
-
-// ReminderFrequency is defined in domain entities; use the imported type to
-// avoid duplicate definitions and the resulting type mismatch.
-
 class NotificationService {
   static final _plugin = FlutterLocalNotificationsPlugin();
   static bool _ready = false;
@@ -27,7 +18,7 @@ class NotificationService {
   static Future<void> init() async {
     if (_ready) return;
     tz.initializeTimeZones();
-
+    requestPermission();
     const android = AndroidInitializationSettings('@mipmap/ic_launcher');
     const ios = DarwinInitializationSettings(
       requestAlertPermission: true,
@@ -36,7 +27,7 @@ class NotificationService {
     );
 
     await _plugin.initialize(
-      const InitializationSettings(android: android, iOS: ios),
+      settings: const InitializationSettings(android: android, iOS: ios),
       onDidReceiveNotificationResponse: _onTap,
     );
 
@@ -56,40 +47,58 @@ class NotificationService {
     _ready = true;
   }
 
+  static Future<bool> requestPermission() async {
+    final androidPlugin = _plugin.resolvePlatformSpecificImplementation<
+        AndroidFlutterLocalNotificationsPlugin>();
+
+    final iosPlugin = _plugin.resolvePlatformSpecificImplementation<
+        IOSFlutterLocalNotificationsPlugin>();
+
+    bool granted = false;
+
+    // ── Android 13+ notification permission ──
+    if (androidPlugin != null) {
+      final androidGranted =
+          await androidPlugin.requestNotificationsPermission();
+      granted = androidGranted ?? false;
+    }
+
+    // ❌ REMOVE THIS (DO NOT USE FOR HABIT APP)
+    await androidPlugin?.requestExactAlarmsPermission();
+
+    // ── iOS permission ──
+    final iosGranted = await iosPlugin?.requestPermissions(
+      alert: true,
+      badge: true,
+      sound: true,
+    );
+
+    if (iosGranted == true) {
+      granted = true;
+    }
+
+    return granted;
+  }
+
   static void _onTap(NotificationResponse r) {
     // Deep-link: r.payload contains habitId for routing if needed
     debugPrint('Notification tapped — payload: ${r.payload}');
   }
 
   // ── Permission ────────────────────────────────────────────────────────────
-  static Future<bool> requestPermission() async {
-    bool granted = false;
-    await _plugin
-        .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
-        ?.requestExactAlarmsPermission();
-    final iosResult = await _plugin
-        .resolvePlatformSpecificImplementation<
-            IOSFlutterLocalNotificationsPlugin>()
-        ?.requestPermissions(alert: true, badge: true, sound: true);
-    if (iosResult == true) granted = true;
-
-    final androidResult = await _plugin
-        .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
-        ?.requestNotificationsPermission();
-    if (androidResult == true) granted = true;
-
-    return granted;
-  }
 
   static Future<bool> arePermissionsGranted() async {
     final android = _plugin.resolvePlatformSpecificImplementation<
         AndroidFlutterLocalNotificationsPlugin>();
 
-    final granted = await android?.areNotificationsEnabled();
+    final ios = _plugin.resolvePlatformSpecificImplementation<
+        IOSFlutterLocalNotificationsPlugin>();
 
-    return granted ?? false;
+    bool androidEnabled = await android?.areNotificationsEnabled() ?? false;
+
+    bool iosEnabled = await ios?.requestPermissions(alert: false) ?? false;
+
+    return androidEnabled || iosEnabled;
   }
 
   // ── Schedule a reminder ───────────────────────────────────────────────────
@@ -137,14 +146,12 @@ class NotificationService {
       final scheduled = _nextOccurrence(reminder.time, days[i]);
 
       await _plugin.zonedSchedule(
-        notifId,
-        '🌿 HabitFlow',
-        body,
-        scheduled,
-        details,
-        androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-        uiLocalNotificationDateInterpretation:
-            UILocalNotificationDateInterpretation.absoluteTime,
+        id: notifId,
+        title: 'HabitFlow',
+        body: body,
+        scheduledDate: scheduled,
+        notificationDetails: details,
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
         matchDateTimeComponents: reminder.frequency == ReminderFrequency.once
             ? null
             : DateTimeComponents.dayOfWeekAndTime,
@@ -156,7 +163,7 @@ class NotificationService {
   // ── Cancel ────────────────────────────────────────────────────────────────
   static Future<void> cancelReminder(String reminderId) async {
     for (int i = 0; i < 7; i++) {
-      await _plugin.cancel(_stableId(reminderId, i));
+      await _plugin.cancel(id: _stableId(reminderId, i));
     }
   }
 
@@ -165,7 +172,7 @@ class NotificationService {
     final pending = await _plugin.pendingNotificationRequests();
     for (final n in pending) {
       if (n.payload == habitId) {
-        await _plugin.cancel(n.id);
+        await _plugin.cancel(id: n.id);
       }
     }
   }
@@ -174,21 +181,62 @@ class NotificationService {
 
   // ── Test notification ─────────────────────────────────────────────────────
   static Future<void> showTest(String habitName, String habitIcon) async {
-    await _plugin.show(
-      Random().nextInt(9000) + 1000,
-      '🌿 HabitFlow — Reminder Set!',
-      '$habitIcon $habitName reminder is active.',
-      const NotificationDetails(
-        android: AndroidNotificationDetails(
-          _channelId,
-          _channelName,
-          importance: Importance.high,
-          priority: Priority.high,
-        ),
-        iOS: DarwinNotificationDetails(presentAlert: true),
+    final id = Random().nextInt(9000) + 1000;
+    final scheduledDate =
+        tz.TZDateTime.now(tz.local).add(const Duration(seconds: 1));
+
+    final details = NotificationDetails(
+      android: AndroidNotificationDetails(
+        _channelId,
+        _channelName,
+        channelDescription: _channelDesc,
+        importance: Importance.high,
+        priority: Priority.high,
+        icon: '@mipmap/ic_launcher',
+        playSound: true,
+        enableVibration: true,
       ),
+      iOS: const DarwinNotificationDetails(presentAlert: true),
+    );
+
+    await _plugin.zonedSchedule(
+      id: id,
+      title: 'HabitFlow — Reminder Set!',
+      body: '$habitIcon $habitName reminder is active.',
+      scheduledDate: scheduledDate,
+      notificationDetails: details,
+      androidScheduleMode: AndroidScheduleMode.inexact,
     );
   }
+  // static Future<void> showTest(String name, {
+  //   required int id,
+  //   required String title,
+  //   required String body,
+  //   required DateTime dateTime,
+  // }) async {
+  //   final scheduledTime = tz.TZDateTime.from(dateTime, tz.local);
+
+  //   await _plugin.zonedSchedule(
+  //     id,
+  //     title,
+  //     body,
+  //     scheduledTime,
+  //     const NotificationDetails(
+  //       android: AndroidNotificationDetails(
+  //         'todo_channel',
+  //         'Todo Notifications',
+  //         channelDescription: 'Task reminders',
+  //         importance: Importance.max,
+  //         priority: Priority.high,
+  //         icon: '@mipmap/ic_launcher',
+  //       ),
+  //     ),
+  //     androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+  //     uiLocalNotificationDateInterpretation:
+  //         UILocalNotificationDateInterpretation.absoluteTime,
+  //     matchDateTimeComponents: DateTimeComponents.dateAndTime,
+  //   );
+  // }
 
   // ── Pending list ──────────────────────────────────────────────────────────
   static Future<List<PendingNotificationRequest>> getPending() =>

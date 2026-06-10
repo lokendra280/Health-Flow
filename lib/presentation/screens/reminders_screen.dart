@@ -7,9 +7,6 @@ import 'package:habitflow/core/utils/notification_service.dart';
 import 'package:habitflow/domain/entities/entities.dart';
 import 'package:habitflow/presentation/providers/providers.dart';
 
-// ─────────────────────────────────────────────────────────────────────────────
-//  REMINDERS SCREEN
-// ─────────────────────────────────────────────────────────────────────────────
 class RemindersScreen extends ConsumerWidget {
   final List<({String id, String name, String icon})> habits;
   const RemindersScreen({super.key, required this.habits});
@@ -443,7 +440,7 @@ class _AddReminderSheetState extends ConsumerState<AddReminderSheet> {
     if (_selectedHabitId == null) return;
     setState(() => _saving = true);
     try {
-      await ref.read(reminderListProvider.notifier).add(
+      final reminder = await ref.read(reminderListProvider.notifier).add(
             habitId: _selectedHabitId!,
             time: _time,
             frequency: _frequency,
@@ -459,7 +456,11 @@ class _AddReminderSheetState extends ConsumerState<AddReminderSheet> {
       final habit = widget.habits.firstWhere((h) => h.id == _selectedHabitId,
           orElse: () => (id: _selectedHabitId!, name: 'Habit', icon: '📋'));
       // Show a test notification for confirmation (scheduling assumed handled by provider)
-      await NotificationService.showTest(habit.name, habit.icon);
+      await NotificationService.scheduleReminder(
+        reminder,
+        habitName: habit.name,
+        habitIcon: habit.icon,
+      );
       if (mounted) Navigator.of(context).pop();
     } finally {
       if (mounted) setState(() => _saving = false);
@@ -575,7 +576,7 @@ class _AddReminderSheetState extends ConsumerState<AddReminderSheet> {
                 ),
               ),
             ),
-           
+
             const Gap(20),
 
             // ── Frequency ─────────────────────────────────
