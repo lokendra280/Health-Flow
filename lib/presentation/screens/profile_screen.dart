@@ -7,8 +7,8 @@ import 'package:habitflow/core/constants/constant_assets.dart';
 import 'package:habitflow/core/theme/app_theme.dart';
 import 'package:habitflow/domain/entities/entities.dart';
 import 'package:habitflow/presentation/providers/providers.dart';
-import 'package:habitflow/presentation/widgets/sync_status_widget.dart';
-import 'package:intl/intl.dart';
+import 'package:habitflow/presentation/screens/login_required_card.dart';
+import 'package:habitflow/presentation/screens/sign_in_screen.dart';
 
 class ProfileScreen extends ConsumerStatefulWidget {
   const ProfileScreen({super.key});
@@ -38,16 +38,28 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
 
   @override
   Widget build(BuildContext context) {
-    final authState = ref.watch(authStateProvider);
-    final user = authState.user;
+    final user = ref.watch(authStateProvider).user;
+
     final habits = ref.watch(habitListProvider).value ?? [];
     final longest = ref.watch(longestEverProvider);
     final overall = ref.watch(overallStreakProvider);
     final progress = ref.watch(progressProvider);
-    final auth = ref.watch(authStateProvider);
 
-    if (user == null) return const SizedBox.shrink();
+    if (user == null) {
+      return LoginRequiredCard(
+        onLogin: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const SignInScreen(),
+            ),
+          );
+        },
+      );
+    }
 
+    // Total completed = all done checkins across habits (use progress as proxy)
+    final totalCompleted = progress.done * 13; // placeholder multiplier
     return Scaffold(
       backgroundColor: context.bgColor,
       body: SafeArea(
@@ -56,244 +68,174 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
           child: CustomScrollView(
             physics: const BouncingScrollPhysics(),
             slivers: [
-              // ── Header ────────────────────────────────
+              // ── AppBar row ────────────────────────────
               SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-                  child: Row(
-                    children: [
-                      Text('Profile', style: context.syne(28, FontWeight.w800)),
-                      const Spacer(),
-                      // Sync indicator
-                      const SyncStatusWidget(compact: true),
-                      const Gap(10),
-                      // Edit button
-                      GestureDetector(
-                        onTap: () => _showEditSheet(context, user),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 14, vertical: 8),
+                  child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 16, 16, 0),
+                child: Row(children: [
+                  Text('Profile', style: context.syne(22, FontWeight.w800)),
+                  const Spacer(),
+                  GestureDetector(
+                      onTap: () => _showEditSheet(context, user),
+                      child: Container(
+                          width: 38,
+                          height: 38,
                           decoration: BoxDecoration(
-                            color: context.surface2,
-                            borderRadius: BorderRadius.circular(99),
-                            border: Border.all(
-                                color: context.borderColor, width: 1.5),
-                          ),
-                          child: Row(mainAxisSize: MainAxisSize.min, children: [
-                            Icon(Icons.edit_outlined,
-                                size: 15, color: context.textSecondary),
-                            const Gap(5),
-                            Text('Edit',
-                                style: context.dmSans(13, FontWeight.w500,
-                                    color: context.textSecondary)),
-                          ]),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-
-              // ── Avatar + name ─────────────────────────
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    children: [
-                      // Avatar
-                      Stack(
-                        children: [
-                          Container(
-                            width: 96,
-                            height: 96,
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                                colors: [
-                                  context.accent,
-                                  context.accent.withOpacity(0.6),
-                                ],
-                              ),
+                              color: context.surface2,
                               shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: context.accent.withOpacity(0.35),
-                                  blurRadius: 20,
-                                  offset: const Offset(0, 6),
-                                )
-                              ],
-                            ),
-                            child: Center(
-                              child: Text(
-                                user.initials,
-                                style: GoogleFonts.syne(
-                                  fontSize: 36,
-                                  fontWeight: FontWeight.w800,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ),
-                          ),
-                          Positioned(
-                            right: 0,
-                            bottom: 0,
-                            child: Container(
-                              width: 28,
-                              height: 28,
-                              decoration: BoxDecoration(
-                                color: context.surfaceColor,
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                    color: context.borderColor, width: 2),
-                              ),
-                              child: const Icon(Icons.camera_alt_outlined,
-                                  size: 14, color: Colors.grey),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const Gap(16),
-                      Text(user.displayName,
-                          style: context.syne(22, FontWeight.w800)),
-                      const Gap(4),
-                      Text(user.email,
-                          style: context.dmSans(14, FontWeight.w400,
-                              color: context.textSecondary)),
-                      const Gap(6),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 5),
+                              border: Border.all(
+                                  color: context.borderColor, width: 1.5)),
+                          child: Icon(Icons.settings_outlined,
+                              size: 18, color: context.textSecondary))),
+                ]),
+              )),
+
+              // ── Avatar + name + motivational text ─────
+              SliverToBoxAdapter(
+                  child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
+                child: Column(children: [
+                  // Avatar
+                  Stack(alignment: Alignment.bottomRight, children: [
+                    Container(
+                        width: 90,
+                        height: 90,
                         decoration: BoxDecoration(
-                          color: context.accentSurf,
-                          borderRadius: BorderRadius.circular(99),
-                        ),
-                        child: Text(
-                          'Member since ${DateFormat('MMM yyyy').format(user.createdAt)}',
-                          style: context.dmSans(12, FontWeight.w500,
-                              color: context.accent),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                                color: const Color(0xFF52B788), width: 3),
+                            boxShadow: [
+                              BoxShadow(
+                                  color:
+                                      const Color(0xFF52B788).withOpacity(.25),
+                                  blurRadius: 16,
+                                  offset: const Offset(0, 4))
+                            ]),
+                        child: ClipOval(
+                            child: Container(
+                                color: const Color(0xFFE8F5E9),
+                                child: Center(
+                                    child: Text(user.initials.toUpperCase(),
+                                        style: GoogleFonts.syne(
+                                            fontSize: 32,
+                                            fontWeight: FontWeight.w800,
+                                            color:
+                                                const Color(0xFF52B788))))))),
+                    Container(
+                        width: 26,
+                        height: 26,
+                        decoration: BoxDecoration(
+                            color: context.surfaceColor,
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                                color: context.borderColor, width: 2)),
+                        child: const Icon(Icons.edit_rounded,
+                            size: 13, color: Colors.grey)),
+                  ]),
+                  const Gap(14),
+                  Text(user.displayName,
+                      style: context.syne(22, FontWeight.w800)),
+                  const Gap(4),
+                  Row(mainAxisAlignment: MainAxisAlignment.center, children: [
+                    Text('Keep going, you\'re doing great!',
+                        style: context.dmSans(13, FontWeight.w400,
+                            color: context.textSecondary)),
+                    const Gap(4),
+                    const Text('✏️', style: TextStyle(fontSize: 13)),
+                  ]),
+                  const Gap(16),
 
-              // ── Stats grid ────────────────────────────
+                  // ── Total Habits + Total Completed card ──
+                  Container(
+                    decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                            colors: [
+                              Color(0xFF4CAF50),
+                              Color(0xFF66BB6A),
+                              Color(0xFF81C784),
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight),
+                        borderRadius: BorderRadius.circular(16)),
+                    child: Row(children: [
+                      Expanded(
+                          child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 20, vertical: 16),
+                              child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text('Total Habits',
+                                        style: context.dmSans(
+                                            11, FontWeight.w500,
+                                            color: Colors.white70)),
+                                    const Gap(4),
+                                    Text('${habits.length}',
+                                        style: context
+                                            .syne(26, FontWeight.w800)
+                                            .copyWith(color: Colors.white)),
+                                  ]))),
+                      Container(width: 1, height: 50, color: Colors.white24),
+                      Expanded(
+                          child: Padding(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 20, vertical: 16),
+                              child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text('Total Completed',
+                                        style: context.dmSans(
+                                            11, FontWeight.w500,
+                                            color: Colors.white70)),
+                                    const Gap(4),
+                                    Text('$totalCompleted',
+                                        style: context
+                                            .syne(26, FontWeight.w800)
+                                            .copyWith(color: Colors.white)),
+                                  ]))),
+                    ]),
+                  ),
+                ]),
+              )),
+
+              // ── Menu items (matches design) ───────────
+              const SliverToBoxAdapter(child: Gap(24)),
               SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Your Stats',
-                          style: context.syne(18, FontWeight.w700)),
-                      const Gap(14),
-                      GridView.count(
-                        crossAxisCount: 2,
-                        crossAxisSpacing: 10,
-                        mainAxisSpacing: 10,
-                        shrinkWrap: true,
-                        physics: const NeverScrollableScrollPhysics(),
-                        childAspectRatio: 1.6,
-                        children: [
-                          _StatCard(
-                              emoji: Assets.habit,
-                              label: 'Total Habits',
-                              color: context.accent,
-                              value: '${habits.length}'),
-                          _StatCard(
-                              emoji: Assets.strike,
-                              label: 'Current Streak',
-                              color: context.red,
-                              value: '${overall}d'),
-                          _StatCard(
-                              emoji: Assets.trophy,
-                              label: 'Longest Streak',
-                              value: '${longest}d'),
-                          _StatCard(
-                              emoji: Assets.done,
-                              label: 'Done Today',
-                              color: context.accent,
-                              value: '${progress.done}/${progress.total}'),
-                        ],
-                      ),
-                    ],
+                  child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Column(children: [
+                  _MenuItem(
+                    icon: Assets.about,
+                    label: 'Achievements',
+                    onTap: () {},
                   ),
-                ),
-              ),
+                  _MenuItem(icon: Assets.habit, label: 'History', onTap: () {}),
+                  _MenuItem(
+                      icon: Assets.notification,
+                      label: 'Themes',
+                      onTap: () => _toggleTheme()),
+                  // _MenuItem(
+                  //     Icons.notifications_outlined, '🔔', 'Reminders', () {}),
+                  // _MenuItem(
+                  //     Icons.help_outline_rounded, '❓', 'Help & Support', () {}),
+                  // _MenuItem(Icons.info_outline_rounded, 'ℹ️', 'About HabitFlow',
+                  //     () {}),
+                ]),
+              )),
 
-              // ── Sync section ──────────────────────────
-              const SliverToBoxAdapter(child: Gap(28)),
+              // ── Log Out ───────────────────────────────
+              const SliverToBoxAdapter(child: Gap(20)),
               SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Cloud Sync',
-                          style: context.syne(18, FontWeight.w700)),
-                      const Gap(14),
-                      const SyncStatusWidget(compact: false),
-                    ],
-                  ),
-                ),
-              ),
+                  child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: GestureDetector(
+                    onTap: () => _signOut(context),
+                    child: Center(
+                        child: Text('Log Out',
+                            style: context.dmSans(15, FontWeight.w700,
+                                color: AppColors.coral700)))),
+              )),
 
-              // ── Account actions ───────────────────────
-              const SliverToBoxAdapter(child: Gap(28)),
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Account', style: context.syne(18, FontWeight.w700)),
-                      const Gap(14),
-                      _ActionTile(
-                        icon: Icons.lock_reset_rounded,
-                        label: 'Change Password',
-                        sub: 'Send a reset link to your email',
-                        onTap: () => _changePassword(context, user.email),
-                      ),
-                      const Gap(10),
-                      _ActionTile(
-                        icon: Icons.notifications_outlined,
-                        label: 'Notification Preferences',
-                        sub: 'Manage reminder settings',
-                        onTap: () {},
-                      ),
-                      const Gap(10),
-                      _ActionTile(
-                        icon: Icons.delete_outline_rounded,
-                        label: 'Delete Account',
-                        sub: 'Permanently remove all your data',
-                        color: AppColors.coral700,
-                        onTap: () => _confirmDelete(context),
-                      ),
-                      const Gap(20),
-
-                      // Sign out
-                      SizedBox(
-                        width: double.infinity,
-                        height: 54,
-                        child: OutlinedButton.icon(
-                          onPressed: () => _signOut(context),
-                          icon: const Icon(Icons.logout_rounded, size: 20),
-                          label: const Text('Sign Out'),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: context.textSecondary,
-                            side: BorderSide(
-                                color: context.borderColor, width: 1.5),
-                            shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(16)),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
               const SliverToBoxAdapter(child: Gap(48)),
             ],
           ),
@@ -302,297 +244,136 @@ class _ProfileScreenState extends ConsumerState<ProfileScreen>
     );
   }
 
-  // ── Edit sheet ─────────────────────────────────────────────────────────────
+  void _toggleTheme() => ref.read(themeModeProvider.notifier).update((s) => !s);
+
   void _showEditSheet(BuildContext context, AppUser user) {
-    final userCtrl = TextEditingController(text: user.username ?? '');
+    final ctrl = TextEditingController(text: user.username ?? '');
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setS) => Container(
-          decoration: BoxDecoration(
+      builder: (ctx) => Container(
+        decoration: BoxDecoration(
             color: context.surfaceColor,
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-          ),
-          padding: EdgeInsets.only(
+            borderRadius:
+                const BorderRadius.vertical(top: Radius.circular(28))),
+        padding: EdgeInsets.only(
             bottom: MediaQuery.of(ctx).viewInsets.bottom + 28,
             left: 24,
             right: 24,
-            top: 14,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                  child: Container(
-                width: 38,
-                height: 4,
-                decoration: BoxDecoration(
-                    color: context.border2,
-                    borderRadius: BorderRadius.circular(99)),
-              )),
-              const Gap(22),
-              Text('Edit Profile', style: context.syne(22, FontWeight.w800)),
-              const Gap(6),
-              Text('Update your display name.',
-                  style: context.dmSans(13, FontWeight.w400,
-                      color: context.textSecondary)),
-              const Gap(22),
-              Text('Username',
-                  style: context.dmSans(13, FontWeight.w600,
-                      color: context.textSecondary)),
-              const Gap(8),
-              TextField(
-                controller: userCtrl,
+            top: 14),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+                child: Container(
+                    width: 38,
+                    height: 4,
+                    decoration: BoxDecoration(
+                        color: context.border2,
+                        borderRadius: BorderRadius.circular(99)))),
+            const Gap(22),
+            Text('Edit Profile', style: context.syne(22, FontWeight.w800)),
+            const Gap(20),
+            TextField(
+                controller: ctrl,
                 autofocus: true,
-                style: context.dmSans(15, FontWeight.w400),
-                decoration: InputDecoration(
-                  hintText: 'e.g. johndoe',
-                  prefixIcon: Icon(Icons.person_outline_rounded,
-                      size: 20, color: context.textTertiary),
-                ),
-              ),
-              const Gap(28),
-              SizedBox(
+                decoration: const InputDecoration(
+                    hintText: 'Display name',
+                    prefixIcon: Icon(Icons.person_outline_rounded, size: 20))),
+            const Gap(24),
+            SizedBox(
                 width: double.infinity,
                 height: 54,
                 child: ElevatedButton(
                   onPressed: () async {
                     await ref
                         .read(authStateProvider.notifier)
-                        .updateProfile(username: userCtrl.text.trim());
+                        .updateProfile(username: ctrl.text.trim());
                     if (context.mounted) Navigator.pop(ctx);
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: context.accent,
-                    foregroundColor: Colors.white,
-                    elevation: 0,
-                    shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14)),
-                  ),
+                      backgroundColor: const Color(0xFF52B788),
+                      foregroundColor: Colors.white,
+                      elevation: 0,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14))),
                   child: Text('Save Changes',
                       style: context.syne(16, FontWeight.w700,
                           color: Colors.white)),
-                ),
-              ),
-            ],
-          ),
+                )),
+          ],
         ),
       ),
     );
   }
 
-  // ── Change password ────────────────────────────────────────────────────────
-  void _changePassword(BuildContext context, String email) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: context.surfaceColor,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title:
-            Text('Change Password', style: context.syne(18, FontWeight.w700)),
-        content: Text(
-          'We\'ll send a password reset link to\n$email',
-          style:
-              context.dmSans(14, FontWeight.w400, color: context.textSecondary),
-        ),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: Text('Cancel',
-                  style: context.dmSans(14, FontWeight.w400,
-                      color: context.textSecondary))),
-          TextButton(
-            onPressed: () async {
-              await ref
-                  .read(authStateProvider.notifier)
-                  .sendPasswordReset(email);
-              if (mounted) {
-                Navigator.pop(ctx);
-                ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                  content: Text('Reset link sent!',
-                      style: GoogleFonts.dmSans(color: Colors.white)),
-                  backgroundColor: context.accent,
-                  behavior: SnackBarBehavior.floating,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                ));
-              }
-            },
-            child: Text('Send Link',
-                style:
-                    context.dmSans(14, FontWeight.w700, color: context.accent)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ── Sign out ───────────────────────────────────────────────────────────────
   void _signOut(BuildContext context) {
     showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: context.surfaceColor,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text('Sign Out', style: context.syne(18, FontWeight.w700)),
-        content: Text('Your habits are safely synced to the cloud.',
-            style: context.dmSans(14, FontWeight.w400,
-                color: context.textSecondary)),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: Text('Cancel',
-                  style: context.dmSans(14, FontWeight.w400,
-                      color: context.textSecondary))),
-          TextButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              ref.read(authStateProvider.notifier).signOut();
-            },
-            child: Text('Sign Out',
-                style: context.dmSans(14, FontWeight.w700,
-                    color: AppColors.coral700)),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ── Delete account ─────────────────────────────────────────────────────────
-  void _confirmDelete(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: context.surfaceColor,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text('Delete Account',
-            style:
-                context.syne(18, FontWeight.w700, color: AppColors.coral700)),
-        content: Text(
-          'This will permanently delete your account and ALL habit data. '
-          'This action cannot be undone.',
-          style:
-              context.dmSans(14, FontWeight.w400, color: context.textSecondary),
-        ),
-        actions: [
-          TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: Text('Cancel',
-                  style: context.dmSans(14, FontWeight.w400,
-                      color: context.textSecondary))),
-          TextButton(
-            onPressed: () {
-              ref.watch(authServiceProvider).deleteAccount();
-            }, // placeholder
-            child: Text('Delete Forever',
-                style: context.dmSans(14, FontWeight.w700,
-                    color: AppColors.coral700)),
-          ),
-        ],
-      ),
-    );
+        context: context,
+        builder: (ctx) => AlertDialog(
+                backgroundColor: context.surfaceColor,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20)),
+                title:
+                    Text('Sign Out', style: context.syne(18, FontWeight.w700)),
+                content: Text('Your habits are safely synced to the cloud.',
+                    style: context.dmSans(14, FontWeight.w400,
+                        color: context.textSecondary)),
+                actions: [
+                  TextButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      child: Text('Cancel',
+                          style: context.dmSans(14, FontWeight.w400,
+                              color: context.textSecondary))),
+                  TextButton(
+                      onPressed: () {
+                        Navigator.pop(ctx);
+                        ref.read(authStateProvider.notifier).signOut();
+                      },
+                      child: Text('Sign Out',
+                          style: context.dmSans(14, FontWeight.w700,
+                              color: AppColors.coral700))),
+                ]));
   }
 }
 
-// ─── Stat Card ────────────────────────────────────────────────────────────────
-class _StatCard extends StatelessWidget {
-  final String emoji, label, value;
-  final Color? color;
-  const _StatCard({
-    required this.emoji,
-    required this.label,
-    required this.value,
-    this.color,
-  });
-
-  @override
-  Widget build(BuildContext ctx) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: ctx.surfaceColor,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: ctx.borderColor,
-          width: 1.5,
-        ),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          CommonSvgWidget(svgName: emoji, height: 22, width: 22, color: color),
-          const SizedBox(height: 6),
-          Flexible(
-            child: FittedBox(
-              fit: BoxFit.scaleDown,
-              alignment: Alignment.centerLeft,
-              child: Text(
-                value,
-                style: ctx.syne(20, FontWeight.w800),
-                maxLines: 1,
-              ),
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: ctx.dmSans(
-              11,
-              FontWeight.w400,
-              color: ctx.textTertiary,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ─── Action Tile ──────────────────────────────────────────────────────────────
-class _ActionTile extends StatelessWidget {
-  final IconData icon;
-  final String label, sub;
-  final Color? color;
+// ── Menu item (matches design: icon left, arrow right) ────────────
+class _MenuItem extends StatelessWidget {
+  final String icon;
+  final String label;
   final VoidCallback onTap;
-  const _ActionTile({
-    required this.icon,
-    required this.label,
-    required this.sub,
-    required this.onTap,
-    this.color,
-  });
+  const _MenuItem(
+      {required this.icon, required this.label, required this.onTap});
+
   @override
   Widget build(BuildContext ctx) => GestureDetector(
         onTap: onTap,
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          margin: const EdgeInsets.only(bottom: 2),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
           decoration: BoxDecoration(
-            color: ctx.surfaceColor,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: ctx.borderColor, width: 1.5),
-          ),
+              color: ctx.surfaceColor,
+              border: Border(
+                  bottom: BorderSide(
+                      color: ctx.borderColor.withOpacity(.5), width: .5))),
           child: Row(children: [
-            Icon(icon, size: 22, color: color ?? ctx.accent),
+            // Colored icon box
+            Container(
+                width: 36,
+                height: 36,
+                decoration: BoxDecoration(
+                    color: ctx.accentSurf,
+                    borderRadius: BorderRadius.circular(10)),
+                child: Center(
+                  child: CommonSvgWidget(
+                    svgName: icon,
+                  ),
+                )),
             const Gap(14),
-            Expanded(
-                child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(label,
-                    style: ctx.dmSans(14, FontWeight.w500,
-                        color: color ?? ctx.textPrimary)),
-                Text(sub,
-                    style: ctx.dmSans(12, FontWeight.w400,
-                        color: ctx.textTertiary)),
-              ],
-            )),
+            Text(label, style: ctx.dmSans(14, FontWeight.w500)),
+            const Spacer(),
             Icon(Icons.arrow_forward_ios_rounded,
                 size: 14, color: ctx.textTertiary),
           ]),

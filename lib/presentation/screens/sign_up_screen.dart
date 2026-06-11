@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:gap/gap.dart';
+import 'package:habitflow/presentation/screens/otp_verfication_page.dart';
 import '../../core/theme/app_theme.dart';
 import '../providers/providers.dart';
 
@@ -13,34 +14,34 @@ class SignUpScreen extends ConsumerStatefulWidget {
 
 class _SignUpScreenState extends ConsumerState<SignUpScreen>
     with SingleTickerProviderStateMixin {
-  final _formKey      = GlobalKey<FormState>();
-  final _userCtrl     = TextEditingController();
-  final _emailCtrl    = TextEditingController();
-  final _passCtrl     = TextEditingController();
-  final _confirmCtrl  = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
+  final _userCtrl = TextEditingController();
+  final _emailCtrl = TextEditingController();
+  final _passCtrl = TextEditingController();
+  final _confirmCtrl = TextEditingController();
 
-  bool _obscurePass    = true;
+  bool _obscurePass = true;
   bool _obscureConfirm = true;
-  bool _loading        = false;
-  bool _agreed         = false;
+  bool _loading = false;
+  bool _agreed = false;
 
   // Password strength
   double get _strength {
     final p = _passCtrl.text;
     if (p.isEmpty) return 0;
     double s = 0;
-    if (p.length >= 8)                          s += 0.25;
-    if (RegExp(r'[A-Z]').hasMatch(p))           s += 0.25;
-    if (RegExp(r'[0-9]').hasMatch(p))           s += 0.25;
-    if (RegExp(r'[!@#\$%^&*(),.?]').hasMatch(p))s += 0.25;
+    if (p.length >= 8) s += 0.25;
+    if (RegExp(r'[A-Z]').hasMatch(p)) s += 0.25;
+    if (RegExp(r'[0-9]').hasMatch(p)) s += 0.25;
+    if (RegExp(r'[!@#\$%^&*(),.?]').hasMatch(p)) s += 0.25;
     return s;
   }
 
   String get _strengthLabel {
     final s = _strength;
-    if (s == 0)    return '';
+    if (s == 0) return '';
     if (s <= 0.25) return 'Weak';
-    if (s <= 0.5)  return 'Fair';
+    if (s <= 0.5) return 'Fair';
     if (s <= 0.75) return 'Good';
     return 'Strong';
   }
@@ -48,21 +49,21 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen>
   Color _strengthColor(BuildContext ctx) {
     final s = _strength;
     if (s <= 0.25) return AppColors.coral700;
-    if (s <= 0.5)  return AppColors.amber700;
+    if (s <= 0.5) return AppColors.amber700;
     if (s <= 0.75) return AppColors.blue700;
     return ctx.accent;
   }
 
   late final AnimationController _fadeCtrl;
-  late final Animation<double>   _fade;
-  late final Animation<Offset>   _slide;
+  late final Animation<double> _fade;
+  late final Animation<Offset> _slide;
 
   @override
   void initState() {
     super.initState();
     _fadeCtrl = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 650));
-    _fade  = CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeOut);
+    _fade = CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeOut);
     _slide = Tween(begin: const Offset(0, 0.06), end: Offset.zero)
         .animate(CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeOut));
     _fadeCtrl.forward();
@@ -72,26 +73,68 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen>
   @override
   void dispose() {
     _fadeCtrl.dispose();
-    _userCtrl.dispose(); _emailCtrl.dispose();
-    _passCtrl.dispose(); _confirmCtrl.dispose();
+    _userCtrl.dispose();
+    _emailCtrl.dispose();
+    _passCtrl.dispose();
+    _confirmCtrl.dispose();
     super.dispose();
   }
 
+  // Future<void> _signUp() async {
+  //   if (!_formKey.currentState!.validate()) return;
+  //   if (!_agreed) {
+  //     ScaffoldMessenger.of(context).showSnackBar(_warnSnack(
+  //         'Please accept the Terms & Privacy Policy to continue.'));
+  //     return;
+  //   }
+  //   setState(() => _loading = true);
+  //   ref.read(authStateProvider.notifier).clearError();
+  //   await ref.read(authStateProvider.notifier).signUp(
+  //     email:    _emailCtrl.text.trim(),
+  //     password: _passCtrl.text,
+  //     username: _userCtrl.text.trim(),
+  //   );
+  //   if (mounted) setState(() => _loading = false);
+  // }
   Future<void> _signUp() async {
     if (!_formKey.currentState!.validate()) return;
+
     if (!_agreed) {
-      ScaffoldMessenger.of(context).showSnackBar(_warnSnack(
-          'Please accept the Terms & Privacy Policy to continue.'));
+      ScaffoldMessenger.of(context).showSnackBar(
+        _warnSnack('Please accept the Terms & Privacy Policy to continue.'),
+      );
       return;
     }
+
     setState(() => _loading = true);
     ref.read(authStateProvider.notifier).clearError();
-    await ref.read(authStateProvider.notifier).signUp(
-      email:    _emailCtrl.text.trim(),
-      password: _passCtrl.text,
-      username: _userCtrl.text.trim(),
-    );
-    if (mounted) setState(() => _loading = false);
+
+    try {
+      await ref.read(authStateProvider.notifier).signUp(
+            email: _emailCtrl.text.trim(),
+            password: _passCtrl.text,
+            username: _userCtrl.text.trim(),
+          );
+
+      if (!mounted) return;
+
+      // ✅ Navigate to OTP screen after successful signup
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => VerifyOtpPage(
+            email: _emailCtrl.text.trim(),
+          ),
+        ),
+      );
+    } catch (e) {
+      // optional: show error
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.toString())),
+      );
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
   }
 
   @override
@@ -101,7 +144,8 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen>
     if (authState.error != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(_errorSnack(authState.error!));
+          ScaffoldMessenger.of(context)
+              .showSnackBar(_errorSnack(authState.error!));
           ref.read(authStateProvider.notifier).clearError();
         }
       });
@@ -132,11 +176,11 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen>
                   Text('Create Account',
                       style: context.syne(30, FontWeight.w800)),
                   const Gap(6),
-                  Text('Start tracking habits that stick — across all your devices.',
+                  Text(
+                      'Start tracking habits that stick — across all your devices.',
                       style: context.dmSans(15, FontWeight.w400,
                           color: context.textSecondary)),
                   const Gap(32),
-
                   Form(
                     key: _formKey,
                     child: Column(
@@ -180,7 +224,8 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen>
                           validator: (v) {
                             if (v == null || v.trim().isEmpty)
                               return 'Email is required';
-                            if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(v.trim()))
+                            if (!RegExp(r'^[^@]+@[^@]+\.[^@]+')
+                                .hasMatch(v.trim()))
                               return 'Enter a valid email address';
                             return null;
                           },
@@ -204,7 +249,8 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen>
                                 _obscurePass
                                     ? Icons.visibility_outlined
                                     : Icons.visibility_off_outlined,
-                                size: 20, color: context.textTertiary,
+                                size: 20,
+                                color: context.textTertiary,
                               ),
                               onPressed: () =>
                                   setState(() => _obscurePass = !_obscurePass),
@@ -213,8 +259,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen>
                           validator: (v) {
                             if (v == null || v.isEmpty)
                               return 'Password is required';
-                            if (v.length < 6)
-                              return 'At least 6 characters';
+                            if (v.length < 6) return 'At least 6 characters';
                             return null;
                           },
                         ),
@@ -229,8 +274,10 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen>
                                 child: TweenAnimationBuilder<double>(
                                   tween: Tween(begin: 0, end: _strength),
                                   duration: const Duration(milliseconds: 300),
-                                  builder: (_, v, __) => LinearProgressIndicator(
-                                    value: v, minHeight: 5,
+                                  builder: (_, v, __) =>
+                                      LinearProgressIndicator(
+                                    value: v,
+                                    minHeight: 5,
                                     backgroundColor: context.surface3,
                                     valueColor: AlwaysStoppedAnimation(
                                         _strengthColor(context)),
@@ -270,7 +317,8 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen>
                                 _obscureConfirm
                                     ? Icons.visibility_outlined
                                     : Icons.visibility_off_outlined,
-                                size: 20, color: context.textTertiary,
+                                size: 20,
+                                color: context.textTertiary,
                               ),
                               onPressed: () => setState(
                                   () => _obscureConfirm = !_obscureConfirm),
@@ -291,7 +339,8 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen>
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             SizedBox(
-                              width: 24, height: 24,
+                              width: 24,
+                              height: 24,
                               child: Checkbox(
                                 value: _agreed,
                                 activeColor: context.accent,
@@ -334,17 +383,21 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen>
 
                         // ── Submit ───────────────────────────
                         SizedBox(
-                          width: double.infinity, height: 56,
+                          width: double.infinity,
+                          height: 56,
                           child: ElevatedButton(
                             onPressed: _loading ? null : _signUp,
                             style: ElevatedButton.styleFrom(
                               backgroundColor: context.accent,
-                              foregroundColor: Colors.white, elevation: 0,
+                              foregroundColor: Colors.white,
+                              elevation: 0,
                               shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(16)),
                             ),
                             child: _loading
-                                ? const SizedBox(width: 22, height: 22,
+                                ? const SizedBox(
+                                    width: 22,
+                                    height: 22,
                                     child: CircularProgressIndicator(
                                         color: Colors.white, strokeWidth: 2.5))
                                 : Text('Create Account',
@@ -383,25 +436,25 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen>
   }
 
   SnackBar _errorSnack(String msg) => SnackBar(
-    content: Row(children: [
-      const Icon(Icons.error_outline, color: Colors.white, size: 18),
-      const Gap(8),
-      Expanded(child: Text(msg,
-          style: GoogleFonts.dmSans(color: Colors.white))),
-    ]),
-    backgroundColor: AppColors.coral700,
-    behavior: SnackBarBehavior.floating,
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-    margin: const EdgeInsets.all(16),
-  );
+        content: Row(children: [
+          const Icon(Icons.error_outline, color: Colors.white, size: 18),
+          const Gap(8),
+          Expanded(
+              child: Text(msg, style: GoogleFonts.dmSans(color: Colors.white))),
+        ]),
+        backgroundColor: AppColors.coral700,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: const EdgeInsets.all(16),
+      );
 
   SnackBar _warnSnack(String msg) => SnackBar(
-    content: Text(msg, style: GoogleFonts.dmSans(color: Colors.white)),
-    backgroundColor: AppColors.amber700,
-    behavior: SnackBarBehavior.floating,
-    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-    margin: const EdgeInsets.all(16),
-  );
+        content: Text(msg, style: GoogleFonts.dmSans(color: Colors.white)),
+        backgroundColor: AppColors.amber700,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: const EdgeInsets.all(16),
+      );
 }
 
 class _Label extends StatelessWidget {

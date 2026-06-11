@@ -21,6 +21,12 @@ class HabitModel extends HiveObject {
   bool isSynced;
   @HiveField(8)
   DateTime? updatedAt;
+  @HiveField(9)
+  String? reminderTime;
+  @HiveField(10)
+  bool reminderEnabled;
+  @HiveField(11)
+  String frequency;
 
   HabitModel({
     required this.id,
@@ -32,5 +38,8 @@ class HabitModel extends HiveObject {
     this.isActive = true,
     this.isSynced = false,
     this.updatedAt,
+    this.reminderTime,
+    this.reminderEnabled = false,
+    this.frequency = 'daily',
   });
 }

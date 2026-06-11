@@ -28,7 +28,7 @@ class RemindersScreen extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Reminders', style: context.syne(28, FontWeight.w800)),
+                    Text('Reminders', style: context.syne(28, FontWeight.w500)),
                     const Gap(4),
                     Text('Never miss a check-in again.',
                         style: context.dmSans(14, FontWeight.w400,
@@ -162,12 +162,13 @@ class _PermissionBannerState extends State<_PermissionBanner> {
   }
 
   Future<void> _check() async {
-    final pending = await NotificationService.getPending();
-    if (mounted)
+    await NotificationService.getPending();
+    if (mounted) {
       setState(() {
         _checked = true;
         _granted = true;
       });
+    }
   }
 
   @override

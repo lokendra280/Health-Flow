@@ -43,7 +43,7 @@ class AppUser {
 }
 
 // ─── Auth Status ────────────────────────────────────────────────────────────────
-enum AuthStatus { loading, authenticated, unauthenticated }
+enum AuthStatus { loading, authenticated, unauthenticated, otpSent }
 
 // ─── SyncState ────────────────────────────────────────────────────────────────
 enum SyncStatus { idle, syncing, success, error, offline }

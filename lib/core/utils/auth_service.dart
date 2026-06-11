@@ -41,6 +41,32 @@ class AuthService {
         'Deleting the auth user must be done from a secure server with the service_role key.');
   }
 
+  Future<void> sendOtp({
+    required String email,
+  }) async {
+    await _client.auth.resend(
+      type: OtpType.signup,
+      email: email,
+    );
+  }
+
+  Future<AppUser> verifyOtp({
+    required String email,
+    required String otp,
+  }) async {
+    final res = await _client.auth.verifyOTP(
+      type: OtpType.email,
+      email: email,
+      token: otp,
+    );
+
+    if (res.user == null) {
+      throw Exception('Invalid OTP');
+    }
+
+    return _mapUser(res.user!);
+  }
+
   Future<AppUser> signIn(
       {required String email, required String password}) async {
     final res =

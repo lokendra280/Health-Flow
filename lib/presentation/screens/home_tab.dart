@@ -131,9 +131,10 @@ class HomeTab extends ConsumerWidget {
             error: (e, _) =>
                 SliverToBoxAdapter(child: Center(child: Text('$e'))),
             data: (habits) {
-              if (habits.isEmpty)
+              if (habits.isEmpty) {
                 return SliverToBoxAdapter(
                     child: EmptyHabits(onAdd: onAddHabit));
+              }
               return SliverPadding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 sliver: SliverList.separated(

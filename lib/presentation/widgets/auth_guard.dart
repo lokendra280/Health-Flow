@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:habitflow/presentation/screens/otp_verfication_page.dart';
 import '../../core/theme/app_theme.dart';
 import '../../domain/entities/entities.dart';
 import '../providers/providers.dart';
@@ -22,16 +23,17 @@ class AuthGuard extends ConsumerWidget {
 
     return AnimatedSwitcher(
       duration: const Duration(milliseconds: 400),
-      switchInCurve:  Curves.easeOut,
+      switchInCurve: Curves.easeOut,
       switchOutCurve: Curves.easeIn,
       transitionBuilder: (child, anim) => FadeTransition(
         opacity: anim,
         child: child,
       ),
       child: switch (auth.status) {
-        AuthStatus.loading         => const _LoadingSplash(),
-        AuthStatus.authenticated   => const HomeShell(),
+        AuthStatus.loading => const _LoadingSplash(),
+        AuthStatus.authenticated => const HomeShell(),
         AuthStatus.unauthenticated => const SignInScreen(),
+        AuthStatus.otpSent => VerifyOtpPage(email: '')
       },
     );
   }
@@ -47,19 +49,23 @@ class _LoadingSplash extends StatefulWidget {
 class _LoadingSplashState extends State<_LoadingSplash>
     with SingleTickerProviderStateMixin {
   late AnimationController _ctrl;
-  late Animation<double>   _pulse;
+  late Animation<double> _pulse;
 
   @override
   void initState() {
     super.initState();
-    _ctrl  = AnimationController(
+    _ctrl = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 1200))
       ..repeat(reverse: true);
-    _pulse = Tween(begin: 0.85, end: 1.0).animate(
-        CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut));
+    _pulse = Tween(begin: 0.85, end: 1.0)
+        .animate(CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut));
   }
 
-  @override void dispose() { _ctrl.dispose(); super.dispose(); }
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -72,30 +78,30 @@ class _LoadingSplashState extends State<_LoadingSplash>
             ScaleTransition(
               scale: _pulse,
               child: Container(
-                width: 90, height: 90,
+                width: 90,
+                height: 90,
                 decoration: BoxDecoration(
                   color: Colors.white.withOpacity(0.15),
                   borderRadius: BorderRadius.circular(26),
                 ),
                 child: const Center(
-                  child: Text('🌿',
-                      style: TextStyle(fontSize: 48)),
+                  child: Text('🌿', style: TextStyle(fontSize: 48)),
                 ),
               ),
             ),
             const SizedBox(height: 28),
             Text('HabitFlow',
-                style: context.syne(34, FontWeight.w800,
-                    color: Colors.white)),
+                style: context.syne(34, FontWeight.w800, color: Colors.white)),
             const SizedBox(height: 8),
             Text('Phase 3 · Cloud Sync',
-                style: context.dmSans(14, FontWeight.w400,
-                    color: Colors.white60)),
+                style:
+                    context.dmSans(14, FontWeight.w400, color: Colors.white60)),
             const SizedBox(height: 48),
             const SizedBox(
-              width: 24, height: 24,
+              width: 24,
+              height: 24,
               child: CircularProgressIndicator(
-                color: Colors.white, strokeWidth: 2.5),
+                  color: Colors.white, strokeWidth: 2.5),
             ),
           ],
         ),

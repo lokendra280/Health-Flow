@@ -6,12 +6,12 @@ import 'package:habitflow/data/repositories/challenge_repository.dart';
 import 'package:habitflow/data/repositories/habit_repository.dart';
 import 'package:habitflow/data/repositories/reminder_repository.dart';
 import 'package:habitflow/presentation/providers/providers.dart';
-import 'package:habitflow/presentation/screens/auth_guard.dart';
+import 'package:habitflow/presentation/screens/splash_page.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:timezone/timezone.dart' as tz;
+import 'package:timezone/data/latest.dart' as tz;
+
 import 'core/theme/app_theme.dart';
 import 'core/utils/notification_service.dart';
-import 'package:timezone/data/latest.dart' as tz;
 
 // ─────────────────────────────────────────────────────────────────────────────
 //  ENTRY POINT
@@ -28,10 +28,9 @@ Future<void> main() async {
   await ReminderRepository.init(); // Phase2 adapters
   await ChallengeRepository.init();
   tz.initializeTimeZones();
-
   // Init notifications
   await NotificationService.init();
-  await NotificationService.arePermissionsGranted();
+  await NotificationService.requestPermission();
   // System chrome
   SystemChrome.setPreferredOrientations([
     DeviceOrientation.portraitUp,
@@ -59,7 +58,7 @@ class HabitFlowApp extends ConsumerWidget {
       theme: AppTheme.light(),
       darkTheme: AppTheme.dark(),
       // AuthGuard handles routing: splash → sign in / home
-      home: const AuthGuard(),
+      home: const LoadingSplash(),
     );
   }
 }

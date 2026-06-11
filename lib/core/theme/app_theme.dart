@@ -25,14 +25,12 @@ class AppColors {
   static const indigo100 = Color(0xFFE0E7FF);
 
   static const List<Color> habitPalette = [
-    green700,
-    amber700,
-    blue700,
-    purple700,
-    coral700,
-    teal700,
-    indigo700,
-    rose700,
+    Color(0xFF4CAF50),
+    Color(0xFF2196F3),
+    Color(0xFF9C27B0),
+    Color(0xFFFF9800),
+    Color(0xFFE91E63),
+    Color(0xFF00BCD4),
   ];
 }
 

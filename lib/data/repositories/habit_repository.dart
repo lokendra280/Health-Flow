@@ -34,6 +34,9 @@ class HabitRepository {
     required String icon,
     required int targetPerDay,
     required int colorIndex,
+    String? reminderTime,
+    bool reminderEnabled = false,
+    String frequency = 'daily',
   }) async {
     final m = HabitModel(
       id: _uuid.v4(),
@@ -43,6 +46,9 @@ class HabitRepository {
       createdAt: DateTime.now(),
       colorIndex: colorIndex,
       isSynced: false,
+      reminderTime: reminderTime,
+      reminderEnabled: reminderEnabled,
+      frequency: frequency,
     );
     await _habits.put(m.id, m);
     return _mH(m);

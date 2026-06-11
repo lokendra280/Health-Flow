@@ -31,4 +31,11 @@ class Assets {
 
   // dashboard
   static const String state = "$_basePathSvg/stats$_svg";
+
+  // add habits
+  static const String book = "$_basePath/book$_png";
+  static const String gym = "$_basePath/gym$_png";
+  static const String running = "$_basePath/running$_png";
+  static const String water = "$_basePath/water$_png";
+  static const String yoga = "$_basePath/yoga$_png";
 }

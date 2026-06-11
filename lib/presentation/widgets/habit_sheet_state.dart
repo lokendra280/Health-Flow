@@ -182,13 +182,13 @@ class HabitSheetState extends State<HabitSheet> {
                   _target == 1 ? 'Once per day' : '$_target times per day',
                   style: context.dmSans(14, FontWeight.w400),
                 )),
-                _StepBtn(Icons.remove_rounded,
+                StepBtn(Icons.remove_rounded,
                     () => setState(() => _target = (_target - 1).clamp(1, 20))),
                 Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: Text('$_target',
                         style: context.syne(24, FontWeight.w800))),
-                _StepBtn(Icons.add_rounded,
+                StepBtn(Icons.add_rounded,
                     () => setState(() => _target = (_target + 1).clamp(1, 20))),
               ]),
             ),
@@ -223,10 +223,10 @@ class HabitSheetState extends State<HabitSheet> {
       );
 }
 
-class _StepBtn extends StatelessWidget {
+class StepBtn extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;
-  const _StepBtn(this.icon, this.onTap);
+  const StepBtn(this.icon, this.onTap, {super.key});
   @override
   Widget build(BuildContext ctx) => GestureDetector(
         onTap: onTap,

@@ -4,14 +4,13 @@
 // ─────────────────────────────────────────────────────────────────────────────
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
-import '../../core/utils/auth_service.dart';
-import '../../core/utils/sync_service.dart';
-import '../../core/utils/notification_service.dart';
-import '../../data/repositories/habit_repository.dart';
-import '../../data/repositories/reminder_repository.dart';
-import '../../data/repositories/challenge_repository.dart';
-import '../../domain/entities/entities.dart';
+import 'package:habitflow/core/utils/auth_service.dart';
+import 'package:habitflow/core/utils/notification_service.dart';
+import 'package:habitflow/core/utils/sync_service.dart';
+import 'package:habitflow/data/repositories/challenge_repository.dart';
+import 'package:habitflow/data/repositories/habit_repository.dart';
+import 'package:habitflow/data/repositories/reminder_repository.dart';
+import 'package:habitflow/domain/entities/entities.dart';
 
 // ══════════════════════════════════════════════════════════════════════════════
 //  UTILITY
@@ -45,32 +44,79 @@ final authStateProvider =
         ));
 
 /// Renamed to AppAuthState to avoid clash with Supabase's AuthState type.
+// class AppAuthState {
+//   final AuthStatus status;
+//   final AppUser? user;
+//   final String? error;
+
+//   const AppAuthState({required this.status, this.user, this.error});
+//   const AppAuthState.loading()
+//       : status = AuthStatus.loading,
+//         user = null,
+//         error = null;
+//   const AppAuthState.unauthenticated()
+//       : status = AuthStatus.unauthenticated,
+//         user = null,
+//         error = null;
+//   AppAuthState.authenticated(AppUser u)
+//       : status = AuthStatus.authenticated,
+//         user = u,
+//         error = null;
+//   AppAuthState.withError(String e)
+//       : status = AuthStatus.unauthenticated,
+//         user = null,
+//         error = e;
+//   bool get isLoading => status == AuthStatus.loading;
+//   bool get isAuthenticated => status == AuthStatus.authenticated;
+//   bool get isUnauthenticated => status == AuthStatus.unauthenticated;
+// }
 class AppAuthState {
   final AuthStatus status;
   final AppUser? user;
   final String? error;
+  final String? email;
 
-  const AppAuthState({required this.status, this.user, this.error});
+  const AppAuthState({
+    required this.status,
+    this.user,
+    this.error,
+    this.email,
+  });
+
   const AppAuthState.loading()
       : status = AuthStatus.loading,
         user = null,
-        error = null;
+        error = null,
+        email = null;
+
   const AppAuthState.unauthenticated()
       : status = AuthStatus.unauthenticated,
         user = null,
-        error = null;
-  AppAuthState.authenticated(AppUser u)
+        error = null,
+        email = null;
+
+  AppAuthState.otpSent(String email)
+      : status = AuthStatus.otpSent,
+        user = null,
+        error = null,
+        email = email;
+
+  AppAuthState.authenticated(AppUser user)
       : status = AuthStatus.authenticated,
-        user = u,
-        error = null;
-  AppAuthState.withError(String e)
+        user = user,
+        error = null,
+        email = null;
+
+  AppAuthState.withError(String error)
       : status = AuthStatus.unauthenticated,
         user = null,
-        error = e;
+        error = error,
+        email = null;
 
   bool get isLoading => status == AuthStatus.loading;
   bool get isAuthenticated => status == AuthStatus.authenticated;
   bool get isUnauthenticated => status == AuthStatus.unauthenticated;
+  bool get isOtpSent => status == AuthStatus.otpSent;
 }
 
 class AuthNotifier extends StateNotifier<AppAuthState> {
@@ -100,11 +146,17 @@ class AuthNotifier extends StateNotifier<AppAuthState> {
     String? username,
   }) async {
     state = const AppAuthState.loading();
+
     try {
-      final u = await _auth.signUp(
-          email: email, password: password, username: username);
-      state = AppAuthState.authenticated(u);
-      unawaited(_repo.syncWithCloud(u.id, _sync));
+      await _auth.signUp(
+        email: email,
+        password: password,
+        username: username,
+      );
+
+      await _auth.sendOtp(email: email);
+
+      state = AppAuthState.otpSent(email);
     } catch (e) {
       state = AppAuthState.withError(_friendly(e));
     }
@@ -121,6 +173,33 @@ class AuthNotifier extends StateNotifier<AppAuthState> {
       unawaited(_repo.syncWithCloud(u.id, _sync));
     } catch (e) {
       state = AppAuthState.withError(_friendly(e));
+    }
+  }
+
+  // ── OTP (passwordless / email verification) ──────────────────────────────────
+  Future<void> sendOtp(String email) => _auth.sendOtp(
+        email: email.trim().toLowerCase(),
+      );
+
+  Future<String?> verifyOtp(String email, String otp) async {
+    state = const AppAuthState.loading();
+    try {
+      final user = await _auth.verifyOtp(
+        email: email.trim().toLowerCase(),
+        otp: otp,
+      );
+
+      if (user != null) {
+        state = AppAuthState.authenticated(user);
+        unawaited(_repo.syncWithCloud(user.id, _sync));
+        return null; // ← success
+      }
+
+      state = AppAuthState.withError('Verification failed');
+      return 'Verification failed';
+    } catch (e) {
+      state = AppAuthState.withError(e.toString());
+      return e.toString();
     }
   }
 
@@ -238,19 +317,113 @@ class HabitListNotifier extends StateNotifier<AsyncValue<List<Habit>>> {
 
   void _load() => state = AsyncValue.data(_repo.getHabits());
 
+  // Future<void> addHabit(
+  //     {required String name,
+  //     required String icon,
+  //     required int targetPerDay,
+  //     required int colorIndex,
+  //     required String reminderTime,
+  //     required bool reminderEnabled,
+  //     required String frequency}) async {
+  //   final habit = await _repo.addHabit(
+  //     name: name,
+  //     icon: icon,
+  //     targetPerDay: targetPerDay,
+  //     colorIndex: colorIndex,
+  //     reminderTime: reminderTime,
+  //     reminderEnabled: reminderEnabled,
+  //     frequency: frequency,
+  //   );
+
+  //   await NotificationService.scheduleReminder(
+  //     Reminder(
+  //       id: 'habit_${habit.id}',
+  //       habitId: habit.id,
+  //       time: ,
+  //       frequency: ReminderFrequency.daily,
+  //       createdAt: habit.createdAt,
+  //     ),
+  //     habitName: habit.name,
+  //     habitIcon: habit.icon,
+  //   );
+
+  //   _load();
+  //   _push();
+  // }
   Future<void> addHabit({
     required String name,
     required String icon,
     required int targetPerDay,
     required int colorIndex,
+    required String reminderTime,
+    required bool reminderEnabled,
+    required String frequency,
   }) async {
-    await _repo.addHabit(
+    try {
+      print('🟢 [addHabit] START');
+      print('👉 name: $name');
+      print('👉 reminderEnabled: $reminderEnabled');
+      print('👉 reminderTime: $reminderTime');
+      print('👉 frequency: $frequency');
+
+      final habit = await _repo.addHabit(
         name: name,
         icon: icon,
         targetPerDay: targetPerDay,
-        colorIndex: colorIndex);
-    _load();
-    _push();
+        colorIndex: colorIndex,
+        reminderTime: reminderTime,
+        reminderEnabled: reminderEnabled,
+        frequency: frequency,
+      );
+
+      print('🟡 [addHabit] HABIT SAVED: ${habit.id}');
+
+      if (!reminderEnabled) {
+        print('🔴 Reminder disabled → skipping notification');
+      } else {
+        final parts = reminderTime.split(':');
+
+        if (parts.length != 2) {
+          print('❌ Invalid reminderTime format: $reminderTime');
+          return;
+        }
+
+        final hour = int.tryParse(parts[0]);
+        final minute = int.tryParse(parts[1]);
+
+        if (hour == null || minute == null) {
+          print('❌ Failed to parse time: $reminderTime');
+          return;
+        }
+
+        final time = TimeOfDay(hour: hour, minute: minute);
+
+        print('🟣 Scheduling notification at $time');
+
+        await NotificationService.scheduleReminder(
+          Reminder(
+            id: 'habit_${habit.id}',
+            habitId: habit.id,
+            time: time,
+            frequency: ReminderFrequency.daily,
+            createdAt: habit.createdAt,
+            isEnabled: true,
+          ),
+          habitName: habit.name,
+          habitIcon: habit.icon,
+        );
+
+        print('🟢 Notification scheduled successfully');
+      }
+
+      _load();
+      _push();
+
+      print('🟢 [addHabit] COMPLETE');
+    } catch (e, stack) {
+      print('🔥 ERROR in addHabit: $e');
+      print(stack);
+    }
   }
 
   Future<void> updateHabit(Habit h) async {
@@ -404,7 +577,7 @@ class ReminderNotifier extends StateNotifier<AsyncValue<List<Reminder>>> {
     );
     await NotificationService.scheduleReminder(r,
         habitName: habitName, habitIcon: habitIcon);
-    await NotificationService.showTest(habitName, habitIcon);
+    // await NotificationService.scheduleReminder(habitName, habitIcon);
     _load();
     return r;
   }
@@ -470,7 +643,7 @@ class NotifPermissionNotifier extends StateNotifier<bool> {
   }
 
   Future<void> _check() async {
-    state = await NotificationService.arePermissionsGranted();
+    state = await NotificationService.requestPermission();
   }
 
   Future<bool> request() async {
