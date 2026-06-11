@@ -64,10 +64,10 @@ class LoadingSplashState extends State<LoadingSplash>
             const SizedBox(height: 28),
             Text('HabitFlow',
                 style: context.syne(34, FontWeight.w800, color: Colors.white)),
-            const SizedBox(height: 8),
-            Text('Phase 3 · Cloud Sync',
-                style:
-                    context.dmSans(14, FontWeight.w400, color: Colors.white60)),
+            // const SizedBox(height: 8),
+            // Text('Phase 3 · Cloud Sync',
+            //     style:
+            //         context.dmSans(14, FontWeight.w400, color: Colors.white60)),
             const SizedBox(height: 48),
             const SizedBox(
               width: 24,

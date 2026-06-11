@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
+import 'package:habitflow/core/constants/habits_icons.dart';
 import 'package:habitflow/core/theme/app_theme.dart';
 import 'package:habitflow/presentation/widgets/habit_sheet.dart';
 
@@ -8,29 +9,6 @@ class HabitSheetState extends State<HabitSheet> {
   String _icon = '🏃';
   int _target = 1;
   bool _saving = false;
-
-  static const _icons = [
-    '🏃',
-    '💪',
-    '📚',
-    '🧘',
-    '💧',
-    '🥗',
-    '🎨',
-    '✍️',
-    '🎵',
-    '🌿',
-    '💤',
-    '🧹',
-    '🤸',
-    '🧠',
-    '☀️',
-    '🫁',
-    '🎯',
-    '🏊',
-    '🚴',
-    '🧗',
-  ];
 
   @override
   void initState() {
@@ -92,7 +70,7 @@ class HabitSheetState extends State<HabitSheet> {
             const Gap(22),
             Row(children: [
               Text(widget.editing != null ? 'Edit Habit' : 'New Habit',
-                  style: context.syne(24, FontWeight.w800)),
+                  style: context.syne(24, FontWeight.w500)),
               const Spacer(),
               if (widget.onDelete != null)
                 IconButton(
@@ -118,11 +96,8 @@ class HabitSheetState extends State<HabitSheet> {
               controller: _nameCtrl,
               autofocus: widget.editing == null,
               style: context.dmSans(15, FontWeight.w400),
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 hintText: 'e.g. Morning Run…',
-                prefixIcon: Padding(
-                    padding: const EdgeInsets.all(13),
-                    child: Text(_icon, style: const TextStyle(fontSize: 22))),
               ),
             ),
             const Gap(16),
@@ -136,27 +111,30 @@ class HabitSheetState extends State<HabitSheet> {
               height: 54,
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
-                itemCount: _icons.length,
+                itemCount: habitIcons.length,
                 separatorBuilder: (_, __) => const Gap(8),
                 itemBuilder: (ctx, i) {
-                  final ic = _icons[i];
-                  final sel = ic == _icon;
+                  final ic = habitIcons[i];
+                  final sel = ic.assetPath.toString() == _icon;
                   return GestureDetector(
-                    onTap: () => setState(() => _icon = ic),
+                    onTap: () =>
+                        setState(() => _icon = ic.assetPath.toString()),
                     child: AnimatedContainer(
                       duration: const Duration(milliseconds: 160),
-                      width: 50,
-                      height: 50,
+                      width: 40,
+                      height: 40,
                       decoration: BoxDecoration(
                         color: sel ? context.accentSurf : context.surface2,
-                        borderRadius: BorderRadius.circular(13),
+                        borderRadius: BorderRadius.circular(8),
                         border: Border.all(
                             color: sel ? context.accent : context.borderColor,
                             width: sel ? 2 : 1.5),
                       ),
                       child: Center(
-                          child:
-                              Text(ic, style: const TextStyle(fontSize: 22))),
+                          child: Image.asset(
+                        height: 20,
+                        ic.assetPath ?? "",
+                      )),
                     ),
                   );
                 },
@@ -187,7 +165,7 @@ class HabitSheetState extends State<HabitSheet> {
                 Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     child: Text('$_target',
-                        style: context.syne(24, FontWeight.w800))),
+                        style: context.syne(24, FontWeight.w500))),
                 StepBtn(Icons.add_rounded,
                     () => setState(() => _target = (_target + 1).clamp(1, 20))),
               ]),

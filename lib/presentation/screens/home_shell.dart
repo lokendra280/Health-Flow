@@ -27,6 +27,12 @@ class _HomeShellState extends ConsumerState<HomeShell>
   int _navIdx = 0;
   String? _justDone;
   final _confettiKey = GlobalKey<_ConfettiLayerState>();
+  final _scrollCtrl = ScrollController();
+  @override
+  void dispose() {
+    _scrollCtrl.dispose();
+    super.dispose();
+  }
 
   Future<void> _handleCheckin(String habitId, int target) async {
     HapticFeedback.mediumImpact();
@@ -86,6 +92,7 @@ class _HomeShellState extends ConsumerState<HomeShell>
         backgroundColor: context.bgColor,
         body: IndexedStack(index: _navIdx, children: [
           HomeTab(
+            scrollController: _scrollCtrl,
             onCheckin: _handleCheckin,
             onAddHabit: _showHabitSheet,
             onEditHabit: (h) => _showHabitSheet(editing: h),
@@ -107,6 +114,7 @@ class _HomeShellState extends ConsumerState<HomeShell>
         ]),
         // ── FAB + Bottom Nav ───────────────────────────────────
         bottomNavigationBar: BottomNav(
+          scrollController: _scrollCtrl,
           index: _navIdx,
           user: user,
           onTap: (i) => setState(() => _navIdx = i),
@@ -124,80 +132,6 @@ class _HomeShellState extends ConsumerState<HomeShell>
     ]);
   }
 }
-
-// ── FAB ───────────────────────────────────────────────────────────
-// class _AddFab extends StatelessWidget {
-//   final VoidCallback onTap;
-//   const _AddFab({required this.onTap});
-//   @override
-//   Widget build(BuildContext context) => GestureDetector(
-//         onTap: onTap,
-//         child: Container(
-//           width: 56,
-//           height: 56,
-//           decoration: const BoxDecoration(
-//               shape: BoxShape.circle,
-//               gradient: LinearGradient(
-//                   colors: [Color(0xFF52B788), Color(0xFF2D6A4F)],
-//                   begin: Alignment.topLeft,
-//                   end: Alignment.bottomRight)),
-//           child: const Icon(Icons.add_rounded, color: Colors.white, size: 28),
-//         ),
-//       );
-// }
-
-// ── Bottom bar ────────────────────────────────────────────────────
-// class _BottomBar extends StatelessWidget {
-//   final int index;
-//   final dynamic user;
-//   final ValueChanged<int> onTap;
-//   const _BottomBar(
-//       {required this.index, required this.user, required this.onTap});
-
-//   static const _items = [
-//     (Icons.home_outlined, Icons.home_rounded, 'Home'),
-//     (Icons.bar_chart_outlined, Icons.bar_chart_rounded, 'Stats'),
-//     (null, null, ''), // FAB slot
-//     (Icons.check_circle_outline, Icons.check_circle_rounded, 'Habits'),
-//     (Icons.person_outline, Icons.person_rounded, 'Profile'),
-//   ];
-
-//   @override
-//   Widget build(BuildContext context) => Container(
-//         height: 70,
-//         decoration: BoxDecoration(
-//           color: context.surfaceColor,
-//           border: Border(top: BorderSide(color: context.borderColor, width: 1)),
-//         ),
-//         child: Row(
-//             children: List.generate(_items.length, (i) {
-//           if (i == 2) return const SizedBox(width: 70); // FAB space
-//           final item = _items[i];
-//           final sel = index == (i > 2 ? i - 1 : i);
-//           // remap: 0→0 1→1 3→2 4→3 (skip FAB slot)
-//           final tabIdx = i > 2 ? i - 1 : i;
-//           return Expanded(
-//               child: GestureDetector(
-//             onTap: () => onTap(tabIdx),
-//             behavior: HitTestBehavior.opaque,
-//             child:
-//                 Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-//               Icon(sel ? item.$2! : item.$1!,
-//                   size: 22,
-//                   color: sel ? const Color(0xFF52B788) : context.textTertiary),
-//               const Gap(3),
-//               Text(item.$3,
-//                   style: TextStyle(
-//                       fontSize: 10,
-//                       fontWeight: sel ? FontWeight.w600 : FontWeight.w400,
-//                       color: sel
-//                           ? const Color(0xFF52B788)
-//                           : context.textTertiary)),
-//             ]),
-//           ));
-//         })),
-//       );
-// }
 
 // ── Confetti (unchanged) ──────────────────────────────────────────
 class _ConfettiLayer extends StatefulWidget {

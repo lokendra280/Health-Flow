@@ -2,25 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:gap/gap.dart';
 import 'package:habitflow/core/common_widget/common_svg.dart';
-import 'package:habitflow/core/constants/constant_assets.dart';
+import 'package:habitflow/core/constants/habits_icons.dart';
 import 'package:habitflow/core/theme/app_theme.dart';
 import 'package:habitflow/presentation/providers/providers.dart';
 import 'package:habitflow/presentation/widgets/habit_icon.dart';
 import 'package:habitflow/presentation/widgets/habit_sheet.dart';
 import 'package:habitflow/presentation/widgets/habit_sheet_state.dart';
-
-// ─── Models (adjust imports to match your project) ────────────────────────────
-// import 'package:yourapp/features/habits/domain/models/habit.dart';
-// import 'package:yourapp/features/habits/presentation/providers/habit_list_provider.dart';
-// import 'package:yourapp/features/sync/presentation/providers/sync_state_provider.dart';
-
-// ─── Category model ───────────────────────────────────────────────────────────
-List<HabitIcon> icons = [
-  const HabitIcon.asset(
-    label: 'Gym',
-    assetPath: Assets.gym,
-  )
-];
 
 const _habitColors = [
   Color(0xFF4CAF50),
@@ -62,7 +49,7 @@ class _AddHabitPageState extends ConsumerState<AddHabitPage>
   TimeOfDay _reminderTime = const TimeOfDay(hour: 9, minute: 0);
   bool _reminderEnabled = true;
   int _target = 1;
-
+  bool _showAllCategories = false;
   late AnimationController _animController;
   late Animation<double> _fadeAnim;
   late Animation<Offset> _slideAnim;
@@ -94,6 +81,13 @@ class _AddHabitPageState extends ConsumerState<AddHabitPage>
     super.dispose();
   }
 
+  void _onCategorySelect(int index) {
+    setState(() {
+      _selectedCategory = index;
+      _nameController.text = habitIcons[index].label;
+    });
+  }
+
   Future<void> _pickReminderTime() async {
     final picked = await showTimePicker(
       context: context,
@@ -117,7 +111,7 @@ class _AddHabitPageState extends ConsumerState<AddHabitPage>
     final reminderTimeStr = '${_reminderTime.hour.toString().padLeft(2, '0')}:'
         '${_reminderTime.minute.toString().padLeft(2, '0')}';
     final frequency = _frequencies[_selectedFrequency];
-    final selectedIcon = icons[_selectedCategory];
+    final selectedIcon = habitIcons[_selectedCategory];
     final icon = selectedIcon.emoji ?? selectedIcon.assetPath ?? '';
     // Wire up your providers here:
     _isEditing
@@ -206,8 +200,8 @@ class _AddHabitPageState extends ConsumerState<AddHabitPage>
               child: Container(
                 width: 36,
                 height: 36,
-                decoration: BoxDecoration(
-                  color: const Color(0xFF4CAF50),
+                decoration: const BoxDecoration(
+                  color: Color(0xFF4CAF50),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(Icons.check_rounded,
@@ -227,17 +221,23 @@ class _AddHabitPageState extends ConsumerState<AddHabitPage>
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
               children: [
                 // ── Category Picker ──────────────────────────────────────
-                _SectionLabel(label: 'Category'),
+                const _SectionLabel(label: 'Category'),
                 const SizedBox(height: 12),
                 _CategoryGrid(
                   selected: _selectedCategory,
-                  onSelect: (i) => setState(() => _selectedCategory = i),
-                  icons: [],
+                  onSelect: _onCategorySelect,
+                  icons: habitIcons,
+                  onToggleView: () {
+                    setState(() {
+                      _showAllCategories = !_showAllCategories;
+                    });
+                  },
+                  showAll: _showAllCategories,
                 ),
                 const SizedBox(height: 28),
 
                 // ── Habit Name ───────────────────────────────────────────
-                _SectionLabel(label: 'Habit Name'),
+                const _SectionLabel(label: 'Habit Name'),
                 const SizedBox(height: 10),
                 _HabitTextField(
                   controller: _nameController,
@@ -459,103 +459,134 @@ class _AddHabitPageState extends ConsumerState<AddHabitPage>
 }
 
 // ─── Category Grid ────────────────────────────────────────────────────────────
-
 class _CategoryGrid extends StatelessWidget {
   const _CategoryGrid({
     required this.icons,
     required this.selected,
     required this.onSelect,
+    required this.showAll,
+    required this.onToggleView,
   });
 
   final List<HabitIcon> icons;
   final int selected;
   final ValueChanged<int> onSelect;
 
+  final bool showAll;
+  final VoidCallback onToggleView;
+
   @override
   Widget build(BuildContext context) {
-    return GridView.builder(
-      itemCount: icons.length,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 5,
-        mainAxisSpacing: 12,
-        crossAxisSpacing: 12,
-      ),
-      itemBuilder: (context, index) {
-        final icon = icons[index];
-        final isSelected = selected == index;
+    final displayIcons = showAll ? icons : icons.take(5).toList();
 
-        return GestureDetector(
-          onTap: () => onSelect(index),
-          child: AnimatedContainer(
-            duration: const Duration(milliseconds: 200),
-            curve: Curves.easeOut,
-            decoration: BoxDecoration(
-              color: isSelected
-                  ? const Color(0xFF4CAF50).withOpacity(0.12)
-                  : Colors.grey.shade100,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color:
-                    isSelected ? const Color(0xFF4CAF50) : Colors.transparent,
-                width: 2,
-              ),
-              boxShadow: isSelected
-                  ? [
-                      BoxShadow(
-                        color: const Color(0xFF4CAF50).withOpacity(0.2),
-                        blurRadius: 10,
-                        offset: const Offset(0, 4),
-                      )
-                    ]
-                  : [],
-            ),
-            child: Transform.scale(
-              scale: isSelected ? 1.15 : 1.0,
-              child: Center(
-                child: icon.isAsset
-                    ? (icon.isSvg
-                        ? CommonSvgWidget(svgName: icon.assetPath!)
-                        : Image.asset(icon.assetPath!, width: 24, height: 24))
-                    : Text(
-                        icon.emoji ?? '',
-                        style: TextStyle(
-                          fontSize: isSelected ? 26 : 22,
-                        ),
+    return Column(
+      children: [
+        GridView.builder(
+          itemCount: displayIcons.length,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 5,
+            mainAxisSpacing: 10,
+            crossAxisSpacing: 10,
+            childAspectRatio: 0.80,
+          ),
+          itemBuilder: (context, index) {
+            final icon = displayIcons[index];
+
+            final realIndex = icons.indexOf(icon);
+            final isSelected = selected == realIndex;
+
+            return GestureDetector(
+              onTap: () => onSelect(realIndex),
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 180),
+                curve: Curves.easeOut,
+                padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? const Color(0xFF4CAF50).withOpacity(0.12)
+                      : Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(
+                    color: isSelected
+                        ? const Color(0xFF4CAF50)
+                        : Colors.transparent,
+                    width: 2,
+                  ),
+                  boxShadow: isSelected
+                      ? [
+                          BoxShadow(
+                            color: const Color(0xFF4CAF50).withOpacity(0.18),
+                            blurRadius: 8,
+                            offset: const Offset(0, 3),
+                          )
+                        ]
+                      : [],
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    AnimatedScale(
+                      scale: isSelected ? 1.15 : 1.0,
+                      duration: const Duration(milliseconds: 180),
+                      curve: Curves.easeOut,
+                      child: icon.isAsset
+                          ? (icon.isSvg
+                              ? CommonSvgWidget(svgName: icon.assetPath!)
+                              : Image.asset(
+                                  icon.assetPath!,
+                                  width: 24,
+                                  height: 24,
+                                ))
+                          : Text(
+                              icon.emoji ?? '',
+                              style: TextStyle(
+                                fontSize: isSelected ? 26 : 22,
+                              ),
+                            ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      icon.label,
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: 10.5,
+                        fontWeight:
+                            isSelected ? FontWeight.w600 : FontWeight.w400,
+                        color: isSelected
+                            ? const Color(0xFF4CAF50)
+                            : Colors.grey.shade600,
                       ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        ),
+        const SizedBox(height: 10),
+        if (icons.length > 5)
+          Container(
+            decoration: BoxDecoration(
+                color: AppColors.green100,
+                borderRadius: BorderRadius.circular(15)),
+            child: TextButton(
+              onPressed: onToggleView,
+              child: Text(
+                showAll ? 'View Less' : 'View More',
+                style: const TextStyle(
+                  color: Color(0xFF4CAF50),
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
           ),
-        );
-      },
+      ],
     );
   }
-
-  // Widget _buildIcon(HabitIcon icon) {
-  //   if (icon.isEmoji) {
-  //     return Text(
-  //       icon.emoji!,
-  //       style: const TextStyle(fontSize: 22),
-  //     );
-  //   }
-
-  //   if (icon.isAsset) {
-  //     return Image.asset(
-  //       icon.assetPath!,
-  //       width: 26,
-  //       height: 26,
-  //     );
-  //   }
-
-  //   if (icon.isSvg) {
-  //     return CommonSvgWidget(
-  //       svgName: icon.svgPath!,
-  //     );
-  //   }
-
-  //   return const SizedBox();
-  // }
 }
 // ─── Shared Widgets ───────────────────────────────────────────────────────────
 

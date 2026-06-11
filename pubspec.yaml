@@ -1,7 +1,7 @@
 name: habitflow
 description: HabitFlow Phase 2 - Reminders, Insights, Challenges & Animations
 publish_to: 'none'
-version: 1.0.0+3
+version: 1.0.0+4
 
 environment:
   sdk: '>=3.0.0 <4.0.0'

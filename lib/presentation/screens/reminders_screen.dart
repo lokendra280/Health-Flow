@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:gap/gap.dart';
+import 'package:habitflow/core/common_widget/common_svg.dart';
 import 'package:habitflow/core/theme/app_theme.dart';
 import 'package:habitflow/core/utils/notification_service.dart';
 import 'package:habitflow/domain/entities/entities.dart';
@@ -240,7 +241,10 @@ class _HabitReminderGroup extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
             child: Row(
               children: [
-                Text(habitIcon, style: const TextStyle(fontSize: 22)),
+                Image.asset(
+                  habitIcon,
+                  height: 20,
+                ),
                 const Gap(10),
                 Text(habitName, style: context.syne(15, FontWeight.w700)),
                 const Spacer(),
@@ -530,7 +534,11 @@ class _AddReminderSheetState extends ConsumerState<AddReminderSheet> {
                       ),
                       child: Row(
                         children: [
-                          Text(h.icon, style: const TextStyle(fontSize: 18)),
+                          Image.asset(
+                            h.icon,
+                            height: 18,
+                            fit: BoxFit.contain,
+                          ),
                           const Gap(6),
                           Text(h.name,
                               style: context.dmSans(13, FontWeight.w500,

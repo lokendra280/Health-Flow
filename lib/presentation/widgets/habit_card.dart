@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:gap/gap.dart';
+import 'package:habitflow/core/common_widget/common_svg.dart';
 import 'package:habitflow/core/theme/app_theme.dart';
 import 'package:habitflow/domain/entities/entities.dart';
 
@@ -98,7 +99,12 @@ class _HabitCardState extends State<HabitCard>
                 decoration: BoxDecoration(
                     color: colorBg, borderRadius: BorderRadius.circular(14)),
                 child: Center(
-                    child: Text(h.icon, style: const TextStyle(fontSize: 26))),
+                  child: Image.asset(
+                    h.icon,
+                    width: 24,
+                    height: 24,
+                  ),
+                ),
               ),
               const Gap(14),
 
@@ -111,7 +117,7 @@ class _HabitCardState extends State<HabitCard>
                   Row(children: [
                     Expanded(
                         child: Text(h.name,
-                            style: context.syne(15, FontWeight.w700),
+                            style: context.syne(15, FontWeight.w500),
                             overflow: TextOverflow.ellipsis)),
                     // Sync dot
                     if (!h.isSynced)
@@ -119,7 +125,7 @@ class _HabitCardState extends State<HabitCard>
                         width: 7,
                         height: 7,
                         margin: const EdgeInsets.only(left: 6),
-                        decoration: BoxDecoration(
+                        decoration: const BoxDecoration(
                             color: AppColors.amber700, shape: BoxShape.circle),
                       ),
                   ]),

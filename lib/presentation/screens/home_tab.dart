@@ -4,11 +4,13 @@ import 'package:gap/gap.dart';
 import 'package:habitflow/core/theme/app_theme.dart';
 import 'package:habitflow/domain/entities/entities.dart';
 import 'package:habitflow/presentation/providers/providers.dart';
+import 'package:habitflow/presentation/screens/add_habit_screen.dart';
 import 'package:habitflow/presentation/widgets/empty_habit.dart';
 import 'package:habitflow/presentation/widgets/habit_card.dart';
 import 'package:habitflow/presentation/widgets/sync_status_widget.dart';
 
 class HomeTab extends ConsumerWidget {
+  final ScrollController? scrollController;
   final Future<void> Function(String, int) onCheckin;
   final VoidCallback onAddHabit;
   final void Function(Habit) onEditHabit;
@@ -25,6 +27,7 @@ class HomeTab extends ConsumerWidget {
     required this.isDark,
     required this.user,
     required this.onToggleTheme,
+    required this.scrollController,
     super.key,
   });
 
@@ -44,6 +47,7 @@ class HomeTab extends ConsumerWidget {
 
     return SafeArea(
       child: CustomScrollView(
+        controller: scrollController,
         physics: const BouncingScrollPhysics(),
         slivers: [
           // ── Header ───────────────────────────────────────────
@@ -59,10 +63,10 @@ class HomeTab extends ConsumerWidget {
                           style: context.dmSans(14, FontWeight.w500,
                               color: context.textSecondary)),
                       const Gap(2),
-                      Text(user?.displayName ?? 'Alex!'.toUpperCase(),
-                          style: context.syne(24, FontWeight.w500)),
+                      // Text(user?.displayName ?? ''.toUpperCase(),
+                      //     style: context.syne(24, FontWeight.w500)),
                     ])),
-                const SyncStatusWidget(compact: true),
+                //  const SyncStatusWidget(compact: true),
                 const Gap(8),
                 _IconBtn(
                     onTap: onToggleTheme,
@@ -132,8 +136,14 @@ class HomeTab extends ConsumerWidget {
                 SliverToBoxAdapter(child: Center(child: Text('$e'))),
             data: (habits) {
               if (habits.isEmpty) {
-                return SliverToBoxAdapter(
-                    child: EmptyHabits(onAdd: onAddHabit));
+                return SliverToBoxAdapter(child: EmptyHabits(onAdd: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const AddHabitPage(),
+                    ),
+                  );
+                }));
               }
               return SliverPadding(
                 padding: const EdgeInsets.symmetric(horizontal: 20),

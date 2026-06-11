@@ -16,8 +16,6 @@ class EmptyHabits extends StatelessWidget {
             border: Border.all(color: ctx.borderColor, width: 1.5),
           ),
           child: Column(children: [
-            const Text('🌱', style: TextStyle(fontSize: 52)),
-            const Gap(14),
             Text('No habits yet',
                 style: ctx.syne(20, FontWeight.w700, color: ctx.textSecondary)),
             const Gap(8),

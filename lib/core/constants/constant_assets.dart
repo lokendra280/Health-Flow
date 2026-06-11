@@ -38,4 +38,12 @@ class Assets {
   static const String running = "$_basePath/running$_png";
   static const String water = "$_basePath/water$_png";
   static const String yoga = "$_basePath/yoga$_png";
+  static const String climbing = "$_basePath/climbing$_png";
+  static const String cycling = "$_basePath/cycling$_png";
+  static const String swimming = "$_basePath/swimming$_png";
+  static const String photography = "$_basePath/photography$_png";
+  static const String journal = "$_basePath/journal$_png";
+  static const String healthyFood = "$_basePath/healthy_food$_png";
+  static const String focus = "$_basePath/focus$_png";
+  static const String cleaning = "$_basePath/cleaning$_png";
 }

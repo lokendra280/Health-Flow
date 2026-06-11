@@ -37,7 +37,7 @@ class ChallengesScreen extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text('Challenges',
-                        style: context.syne(28, FontWeight.w800)),
+                        style: context.syne(28, FontWeight.w500)),
                     const Gap(4),
                     Text('Set a streak goal and crush it.',
                         style: context.dmSans(14, FontWeight.w400,
@@ -266,7 +266,7 @@ class _ChallengeCard extends StatelessWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(challenge.title,
-                                style: ctx.syne(17, FontWeight.w800)),
+                                style: ctx.syne(17, FontWeight.w500)),
                             Text(challenge.description,
                                 style: ctx.dmSans(13, FontWeight.w400,
                                     color: ctx.textSecondary),
@@ -642,7 +642,7 @@ class _CreateChallengeSheetState extends ConsumerState<CreateChallengeSheet> {
               ),
             ),
             const Gap(22),
-            Text('New Challenge', style: context.syne(24, FontWeight.w800)),
+            Text('New Challenge', style: context.syne(24, FontWeight.w400)),
             Text('Set your goal and go all in.',
                 style: context.dmSans(13, FontWeight.w400,
                     color: context.textSecondary)),
@@ -767,7 +767,8 @@ class _CreateChallengeSheetState extends ConsumerState<CreateChallengeSheet> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(h.icon, style: const TextStyle(fontSize: 18)),
+                        Image.asset(h.icon,
+                            width: 20, height: 20, fit: BoxFit.contain),
                         const Gap(6),
                         Text(h.name,
                             style: context.dmSans(13, FontWeight.w500,
@@ -807,7 +808,7 @@ class _CreateChallengeSheetState extends ConsumerState<CreateChallengeSheet> {
                         child: CircularProgressIndicator(
                             color: Colors.white, strokeWidth: 2.5))
                     : Text('Start Challenge',
-                        style: context.syne(17, FontWeight.w700,
+                        style: context.syne(17, FontWeight.w500,
                             color: Colors.white)),
               ),
             ),
