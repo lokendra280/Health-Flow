@@ -100,8 +100,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       const WeeklyGoalsRow(),
       SBC.lHM,
       TodayCalendarStrip(
-        selectedDate: ref.watch(currentDateProvider),
-        onDateSelected: (DateTime value) {},
+        selectedDate: ref.watch(dashboardSelectedDateProvider),
+        onDateSelected: (DateTime value) {
+          ref.read(dashboardSelectedDateProvider.notifier).state = value;
+        },
       ),
       SBC.lHM,
 
@@ -109,11 +111,20 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         builder: (context, ref, _) {
           final summary = ref.watch(todayWorkoutSummaryProvider);
           final plan = ref.watch(aiPlanControllerProvider);
-          final todayWorkout = plan?.workoutForWeekday(DateTime.now());
+          final selectedDate = ref.watch(dashboardSelectedDateProvider);
+          final todayWorkout = plan?.workoutForWeekday(selectedDate);
           final isRestDay = todayWorkout?.isRestDay ?? true;
+          final isToday = selectedDate.day == DateTime.now().day;
+
+          String title = "Today's Workout";
+          if (isRestDay) {
+            title = isToday ? "Today is Rest Day" : "Rest Day";
+          } else if (!isToday) {
+            title = "Workout for ${selectedDate.day}/${selectedDate.month}";
+          }
 
           return PersonalWorkoutCard(
-            title: isRestDay ? "Today is Rest Day" : "Today's Workout",
+            title: title,
             completedCount: summary.completedCount,
             totalCount: summary.totalCount,
             onTap: () {

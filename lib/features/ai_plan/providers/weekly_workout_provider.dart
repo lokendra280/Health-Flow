@@ -2,6 +2,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:habitflow/data/repositories/journey_repository_provider.dart';
 import 'package:habitflow/features/ai_plan/providers/ai_plan_provider.dart';
 
+import '../../dashboard/providers/dashboard_providers.dart';
+
 class WeeklyWorkoutSummary {
   final int completedCount;
   final int totalCount;
@@ -51,26 +53,26 @@ final weeklyWorkoutSummaryProvider =
   return WeeklyWorkoutSummary(completedCount: completed, totalCount: total);
 });
 
-/// Only counts exercises for today — used on the dashboard to show
-/// "remaining" work for the current day specifically.
+/// Only counts exercises for the selected day — used on the dashboard to show
+/// "remaining" work for the chosen day specifically.
 final todayWorkoutSummaryProvider =
     Provider.autoDispose<WeeklyWorkoutSummary>((ref) {
   final plan = ref.watch(aiPlanControllerProvider);
   final repo = ref.watch(journeyRepositoryProvider);
+  final selectedDate = ref.watch(dashboardSelectedDateProvider);
 
   if (plan == null) {
     return const WeeklyWorkoutSummary(completedCount: 0, totalCount: 0);
   }
 
-  final today = DateTime.now();
-  final workout = plan.workoutForWeekday(today);
+  final workout = plan.workoutForWeekday(selectedDate);
 
   if (workout == null || workout.isRestDay) {
     return const WeeklyWorkoutSummary(completedCount: 0, totalCount: 0);
   }
 
   final total = workout.exercises.length;
-  final completedNames = repo.completedExercisesFor(today);
+  final completedNames = repo.completedExercisesFor(selectedDate);
   final completed =
       workout.exercises.where((e) => completedNames.contains(e.name)).length;
 

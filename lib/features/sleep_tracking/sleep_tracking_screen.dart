@@ -96,13 +96,13 @@ class _SleepTrackingScreenState extends ConsumerState<SleepTrackingScreen>
     final history = ref.watch(sleepHistoryProvider);
 
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: Colors.white,
       body: Stack(
         children: [
           // Placeholder — swap for your real AppTopography API once shared.
           Positioned.fill(
             child: CustomPaint(
-              painter: _TopographyBackground(color: AppColors.sleep.withValues(alpha: 0.06)),
+              painter: _TopographyBackground(color: AppColors.sleep.withValues(alpha: 0.04)),
             ),
           ),
           SafeArea(

@@ -14,6 +14,11 @@ import '../../ai_plan/providers/ai_plan_provider.dart';
 
 final bottomNavIndexProvider = StateProvider<int>((ref) => 0);
 final selectedDayIndexProvider = StateProvider<int>((ref) => 0);
+
+/// The date currently selected on the dashboard calendar strip.
+/// Defaults to today (normalized).
+final dashboardSelectedDateProvider = StateProvider<DateTime>((ref) => ref.watch(currentDateProvider));
+
 final double _fallbackCalorieTarget = 2000;
 
 final dashboardDataProvider = Provider<DashboardData>((ref) {

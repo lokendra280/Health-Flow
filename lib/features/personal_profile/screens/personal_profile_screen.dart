@@ -34,11 +34,53 @@ const _commonAllergies = [
   'soy'
 ];
 
-class PersonalProfileScreen extends ConsumerWidget {
+class PersonalProfileScreen extends ConsumerStatefulWidget {
   const PersonalProfileScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<PersonalProfileScreen> createState() => _PersonalProfileScreenState();
+}
+
+class _PersonalProfileScreenState extends ConsumerState<PersonalProfileScreen> {
+  late final TextEditingController _ageCtrl;
+  late final TextEditingController _cmHeightCtrl;
+  late final TextEditingController _ftHeightCtrl;
+  late final TextEditingController _inHeightCtrl;
+
+  @override
+  void initState() {
+    super.initState();
+    final profile = ref.read(personalProfileControllerProvider);
+    _ageCtrl = TextEditingController(text: profile.age?.toString() ?? '');
+    
+    if (profile.heightUnit == 'cm') {
+      _cmHeightCtrl = TextEditingController(text: profile.height?.toStringAsFixed(0) ?? '');
+      _ftHeightCtrl = TextEditingController();
+      _inHeightCtrl = TextEditingController();
+    } else {
+      _cmHeightCtrl = TextEditingController();
+      if (profile.height != null) {
+        final totalInches = profile.height!;
+        _ftHeightCtrl = TextEditingController(text: (totalInches / 12).floor().toString());
+        _inHeightCtrl = TextEditingController(text: (totalInches % 12).toStringAsFixed(0));
+      } else {
+        _ftHeightCtrl = TextEditingController();
+        _inHeightCtrl = TextEditingController();
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _ageCtrl.dispose();
+    _cmHeightCtrl.dispose();
+    _ftHeightCtrl.dispose();
+    _inHeightCtrl.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final controller = ref.read(personalProfileControllerProvider.notifier);
     final profile = ref.watch(personalProfileControllerProvider);
     final isValid = ref.watch(personalProfileValidProvider);
@@ -46,131 +88,239 @@ class PersonalProfileScreen extends ConsumerWidget {
     final colorScheme = theme.colorScheme;
 
     return Scaffold(
-      backgroundColor: colorScheme.surface,
-      body: SafeArea(
-        child: CustomScrollView(
-          slivers: [
-            const SliverToBoxAdapter(
-              child: _StepHeader(
-                step: 2,
-                totalSteps: 3,
-                title: 'About you',
-                subtitle: 'A few details so we can personalize your plan.',
-              ),
+      backgroundColor: Colors.white,
+      body: Stack(
+        children: [
+          Positioned.fill(
+            child: CustomPaint(
+              painter: _TopographyBackground(
+                  color: colorScheme.primary.withValues(alpha: 0.04)),
             ),
-            SliverPadding(
-              padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
-              sliver: SliverList(
-                delegate: SliverChildListDelegate([
-                  AppTextField(
-                    label: "Age",
-                    keyboardType: TextInputType.number,
-                    prefixIcon: Assets.bed,
-                    onChanged: (v) {
-                      final age = int.tryParse(v);
-                      if (age != null) controller.setAge(age);
-                    },
+          ),
+          SafeArea(
+            child: CustomScrollView(
+              slivers: [
+                const SliverToBoxAdapter(
+                  child: _StepHeader(
+                    step: 2,
+                    totalSteps: 3,
+                    title: 'About you',
+                    subtitle: 'A few details so we can personalize your plan.',
                   ),
-                  SBC.lHM,
-                  DropdownButtonFormField<String>(
-                    decoration: const InputDecoration(
-                        labelText: 'Gender', border: OutlineInputBorder()),
-                    value: profile.gender,
-                    items: const [
-                      'female',
-                      'male',
-                      'non-binary',
-                      'prefer not to say'
-                    ]
-                        .map((g) => DropdownMenuItem(value: g, child: Text(g)))
-                        .toList(),
-                    onChanged: (v) {
-                      if (v != null) controller.setGender(v);
-                    },
-                  ),
-                  SBC.lHM,
-                  AppTextField(
-                    label: 'Height (${profile.heightUnit})',
-                    keyboardType: TextInputType.number,
-                    prefixIcon: Assets.bed,
-                    onChanged: (v) {
-                      final h = double.tryParse(v);
-                      if (h != null) controller.setHeight(h);
-                    },
-                  ),
-                  SBC.lHM,
-                  const TextWidget(
-                    title: "Activity Level",
-                  ),
-                  SBC.lHM,
-                  ChipGroupCard(
-                    options: _activityLevels,
-                    isSelected: (level) => profile.activityLevel == level,
-                    onSelected: (level) => controller.setActivityLevel(level),
-                    labelBuilder: (level) => level.replaceAll('_', ' '),
-                  ),
-                  SBC.lHM,
-                  const TextWidget(
-                    title: "Fitness level",
-                  ),
-                  SBC.lHM,
-                  ChipGroupCard(
-                    options: _fitnessLevels,
-                    isSelected: (level) => profile.fitnessLevel == level,
-                    onSelected: (level) => controller.setFitnessLevel(level),
-                  ),
-                  SBC.lHM,
-                  const TextWidget(
-                    title: "Diet preference",
-                  ),
-                  SBC.lHM,
-                  ChipGroupCard(
-                    options: _diets,
-                    isSelected: (d) => profile.dietPreference == d,
-                    onSelected: (d) => controller.setDietPreference(d),
-                  ),
-                  SBC.lHM,
-                  const TextWidget(
-                    title: "Food allergies",
-                  ),
-                  SBC.lHM,
-                  ChipGroupCard(
-                    options: _commonAllergies,
-                    isSelected: (a) => profile.foodAllergies.contains(a),
-                    onSelected: (a) => controller.toggleAllergy(a),
-                    filter: true,
-                  ),
-                  const SizedBox(height: 32),
-                  FilledButton(
-                    onPressed: isValid
-                        ? () async {
-                            await controller.submit();
-                            if (context.mounted) context.go('/ai-plan');
-                          }
-                        : null,
-                    style: FilledButton.styleFrom(
-                      minimumSize: const Size.fromHeight(54),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
+                ),
+                SliverPadding(
+                  padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
+                  sliver: SliverList(
+                    delegate: SliverChildListDelegate([
+                      _PremiumTextField(
+                        controller: _ageCtrl,
+                        label: "Age",
+                        keyboardType: TextInputType.number,
+                        icon: Icons.cake_rounded,
+                        onChanged: (v) {
+                          final age = int.tryParse(v);
+                          if (age != null) controller.setAge(age);
+                        },
                       ),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text('Continue', style: theme.textTheme.labelLarge),
-                        const SizedBox(width: 6),
-                        const Icon(Icons.arrow_forward_rounded, size: 18),
-                      ],
-                    ),
+                      SBC.lHM,
+                      DropdownButtonFormField<String>(
+                        decoration: _fieldDecoration(context,
+                            label: 'Gender', icon: Icons.person_rounded),
+                        value: profile.gender,
+                        items: const [
+                          'female',
+                          'male',
+                          'non-binary',
+                          'prefer not to say'
+                        ]
+                            .map((g) =>
+                                DropdownMenuItem(value: g, child: Text(g)))
+                            .toList(),
+                        onChanged: (v) {
+                          if (v != null) controller.setGender(v);
+                        },
+                      ),
+                      SBC.lHM,
+                      _SectionCard(
+                        icon: Icons.height_rounded,
+                        title: 'Height',
+                        child: Column(
+                          children: [
+                            SegmentedButton<String>(
+                              style: SegmentedButton.styleFrom(
+                                selectedBackgroundColor: colorScheme.primary,
+                                selectedForegroundColor: colorScheme.onPrimary,
+                                side: BorderSide(
+                                    color: colorScheme.outlineVariant),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              segments: const [
+                                ButtonSegment(value: 'cm', label: Text('cm')),
+                                ButtonSegment(value: 'ft', label: Text('ft/in')),
+                              ],
+                              selected: {profile.heightUnit},
+                              onSelectionChanged: (s) {
+                                final newUnit = s.first;
+                                controller.setHeight(profile.height ?? 0,
+                                    unit: newUnit);
+                              },
+                            ),
+                            SBC.mH,
+                            if (profile.heightUnit == 'cm')
+                              _PremiumTextField(
+                                controller: _cmHeightCtrl,
+                                label: 'Height (cm)',
+                                keyboardType: TextInputType.number,
+                                icon: Icons.straighten_rounded,
+                                onChanged: (v) {
+                                  final h = double.tryParse(v);
+                                  if (h != null) controller.setHeight(h);
+                                },
+                              )
+                            else
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: _PremiumTextField(
+                                      controller: _ftHeightCtrl,
+                                      label: 'Feet',
+                                      keyboardType: TextInputType.number,
+                                      icon: Icons.height_rounded,
+                                      onChanged: (v) {
+                                        final ft = int.tryParse(v) ?? 0;
+                                        final inch =
+                                            double.tryParse(_inHeightCtrl.text) ??
+                                                0;
+                                        controller.setHeight(ft * 12.0 + inch);
+                                      },
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: _PremiumTextField(
+                                      controller: _inHeightCtrl,
+                                      label: 'Inches',
+                                      keyboardType: TextInputType.number,
+                                      icon: Icons.height_rounded,
+                                      onChanged: (v) {
+                                        final ft =
+                                            int.tryParse(_ftHeightCtrl.text) ?? 0;
+                                        final inch = double.tryParse(v) ?? 0;
+                                        controller.setHeight(ft * 12.0 + inch);
+                                      },
+                                    ),
+                                  ),
+                                ],
+                              ),
+                          ],
+                        ),
+                      ),
+                      SBC.lHM,
+                      const TextWidget(
+                        title: "Activity Level",
+                      ),
+                      SBC.lHM,
+                      ChipGroupCard(
+                        options: _activityLevels,
+                        isSelected: (level) => profile.activityLevel == level,
+                        onSelected: (level) =>
+                            controller.setActivityLevel(level),
+                        labelBuilder: (level) => level.replaceAll('_', ' '),
+                      ),
+                      SBC.lHM,
+                      const TextWidget(
+                        title: "Fitness level",
+                      ),
+                      SBC.lHM,
+                      ChipGroupCard(
+                        options: _fitnessLevels,
+                        isSelected: (level) => profile.fitnessLevel == level,
+                        onSelected: (level) => controller.setFitnessLevel(level),
+                      ),
+                      SBC.lHM,
+                      const TextWidget(
+                        title: "Diet preference",
+                      ),
+                      SBC.lHM,
+                      ChipGroupCard(
+                        options: _diets,
+                        isSelected: (d) => profile.dietPreference == d,
+                        onSelected: (d) => controller.setDietPreference(d),
+                      ),
+                      SBC.lHM,
+                      const TextWidget(
+                        title: "Food allergies",
+                      ),
+                      SBC.lHM,
+                      ChipGroupCard(
+                        options: _commonAllergies,
+                        isSelected: (a) => profile.foodAllergies.contains(a),
+                        onSelected: (a) => controller.toggleAllergy(a),
+                        filter: true,
+                      ),
+                      const SizedBox(height: 32),
+                      FilledButton(
+                        onPressed: isValid
+                            ? () async {
+                                await controller.submit();
+                                if (context.mounted) context.go('/ai-plan');
+                              }
+                            : null,
+                        style: FilledButton.styleFrom(
+                          minimumSize: const Size.fromHeight(54),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text('Continue', style: theme.textTheme.labelLarge),
+                            const SizedBox(width: 6),
+                            const Icon(Icons.arrow_forward_rounded, size: 18),
+                          ],
+                        ),
+                      ),
+                    ]),
                   ),
-                ]),
-              ),
+                ),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
+}
+
+class _TopographyBackground extends CustomPainter {
+  final Color color;
+  _TopographyBackground({required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 1.5;
+
+    for (double i = -size.height; i < size.width; i += 40) {
+      final path = Path()..moveTo(i, 0);
+      path.quadraticBezierTo(
+        i + size.height / 2,
+        size.height / 2,
+        i + size.height,
+        size.height,
+      );
+      canvas.drawPath(path, paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _TopographyBackground oldDelegate) =>
+      oldDelegate.color != color;
 }
 
 class TextWidget extends StatelessWidget {
@@ -347,6 +497,7 @@ class _SectionCard extends StatelessWidget {
 }
 
 class _PremiumTextField extends StatelessWidget {
+  final TextEditingController? controller;
   final String label;
   final String? suffix;
   final IconData icon;
@@ -354,6 +505,7 @@ class _PremiumTextField extends StatelessWidget {
   final ValueChanged<String> onChanged;
 
   const _PremiumTextField({
+    this.controller,
     required this.label,
     required this.icon,
     required this.keyboardType,
@@ -364,6 +516,7 @@ class _PremiumTextField extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return TextField(
+      controller: controller,
       keyboardType: keyboardType,
       onChanged: onChanged,
       decoration:

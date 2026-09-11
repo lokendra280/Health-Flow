@@ -13,7 +13,7 @@ class GeminiService {
   final String apiKey;
   final String model;
 
-  GeminiService({required this.apiKey, this.model = 'gemini-3.6-flash'});
+  GeminiService({required this.apiKey, this.model = 'gemini-1.5-flash'});
 
   Uri get _endpoint => Uri.parse(
       'https://generativelanguage.googleapis.com/v1beta/models/$model:generateContent?key=$apiKey');
@@ -142,17 +142,55 @@ $directionGuidance
 User goal: ${goal.type}
 User profile: ${profile.age}, ${profile.gender}, ${profile.height} ${profile.heightUnit}, ${profile.activityLevel}
 
-Respond with ONLY a JSON object matching exactly this shape:
+Build a full 7-day exercise schedule (Monday through Sunday) matching the
+guidance above and the user's fitness level. Include 2-4 rest days spread
+across the week.
+
+On non-rest days, provide a "focus" label and list 3-5 specific exercises
+with concrete sets/reps or duration. Ensure the exercises are safe and
+appropriate for the user's profile.
+
+For recommendedHabits, include exactly these four, in this order:
+1. "Log your meals — aim for $calorieTarget kcal/day"
+2. "Walk $stepTarget steps/day"
+3. "Drink $waterTarget ml of water/day"
+4. One short habit about consistency or sleep.
+
+Respond with ONLY a JSON object matching exactly this shape (no markdown
+fences, no commentary). weeklySchedule MUST have exactly 7 entries, one
+per day, in order Monday through Sunday. Ensure every entry has an 
+"exercises" array, even if it is empty for rest days:
 {
   "calorieTarget": $calorieTarget,
   "waterTarget": $waterTarget,
   "stepTarget": $stepTarget,
   "goalDirection": "$direction",
-  "weeklySchedule": [...],
+  "weeklySchedule": [
+    {
+      "day": "Monday",
+      "isRestDay": false,
+      "focus": "Upper body strength",
+      "exercises": [
+        {"name": "Push-ups", "sets": "3 sets x 12 reps", "category": "strength"},
+        {"name": "Brisk walk", "sets": "20 min", "category": "cardio"}
+      ]
+    },
+    {
+      "day": "Tuesday", 
+      "isRestDay": true, 
+      "focus": null, 
+      "exercises": []
+    }
+  ],
   "sleepTarget": "7-9_hours",
   "mealTracking": true,
-  "recommendedHabits": [...],
-  "milestones": [...]
+  "recommendedHabits": [
+    "Log your meals — aim for $calorieTarget kcal/day",
+    "Walk $stepTarget steps/day",
+    "Drink $waterTarget ml of water/day",
+    "Get 8 hours of sleep"
+  ],
+  "milestones": ["First week complete", "Down 1kg", "Improved energy"]
 }
 ''';
   }

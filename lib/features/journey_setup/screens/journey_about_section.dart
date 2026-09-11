@@ -132,7 +132,9 @@ class _JourneyAboutSectionState extends ConsumerState<JourneyAboutSection>
               Icons.height_rounded,
               const Color(0xFF0984E3),
               'Height',
-              '${profile.height!.toStringAsFixed(0)} ${profile.heightUnit}'
+              profile.heightUnit == 'ft'
+                  ? "${(profile.height! / 12).floor()}'${(profile.height! % 12).round()}\""
+                  : '${profile.height!.toStringAsFixed(0)} cm'
             ),
           if (profile.activityLevel != null)
             (
