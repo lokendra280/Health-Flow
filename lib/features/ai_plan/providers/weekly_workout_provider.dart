@@ -50,3 +50,29 @@ final weeklyWorkoutSummaryProvider =
 
   return WeeklyWorkoutSummary(completedCount: completed, totalCount: total);
 });
+
+/// Only counts exercises for today — used on the dashboard to show
+/// "remaining" work for the current day specifically.
+final todayWorkoutSummaryProvider =
+    Provider.autoDispose<WeeklyWorkoutSummary>((ref) {
+  final plan = ref.watch(aiPlanControllerProvider);
+  final repo = ref.watch(journeyRepositoryProvider);
+
+  if (plan == null) {
+    return const WeeklyWorkoutSummary(completedCount: 0, totalCount: 0);
+  }
+
+  final today = DateTime.now();
+  final workout = plan.workoutForWeekday(today);
+
+  if (workout == null || workout.isRestDay) {
+    return const WeeklyWorkoutSummary(completedCount: 0, totalCount: 0);
+  }
+
+  final total = workout.exercises.length;
+  final completedNames = repo.completedExercisesFor(today);
+  final completed =
+      workout.exercises.where((e) => completedNames.contains(e.name)).length;
+
+  return WeeklyWorkoutSummary(completedCount: completed, totalCount: total);
+});

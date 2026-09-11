@@ -3,8 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:habitflow/core/theme/app_theme.dart';
 import 'package:habitflow/features/dashboard/providers/dashboard_providers.dart';
 
-/// Green "AI Insight" card. Shows a loading pulse while the insight is
-/// generated, an inline error state, then the final text.
 class AiInsightCard extends ConsumerStatefulWidget {
   final VoidCallback? onTap;
   const AiInsightCard({super.key, this.onTap});
@@ -28,22 +26,29 @@ class _AiInsightCardState extends ConsumerState<AiInsightCard>
 
   @override
   Widget build(BuildContext context) {
-    final insight = ref.watch(aiInsightProvider);
+    final insightState = ref.watch(aiInsightProvider);
     final textTheme = Theme.of(context).textTheme;
+    final isIdle = insightState.value == 'Tap to get your personalized AI insight for today! ✨';
 
     return Material(
       color: AppColors.insightBg,
       borderRadius: BorderRadius.circular(20),
       child: InkWell(
         borderRadius: BorderRadius.circular(20),
-        onTap: widget.onTap,
+        onTap: () {
+          if (isIdle) {
+            ref.read(aiInsightProvider.notifier).refresh();
+          } else if (widget.onTap != null) {
+            widget.onTap!();
+          }
+        },
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               FadeTransition(
-                opacity: insight.isLoading
+                opacity: insightState.isLoading
                     ? Tween(begin: 0.4, end: 1.0).animate(_pulseController)
                     : const AlwaysStoppedAnimation(1.0),
                 child: Icon(Icons.auto_awesome,
@@ -56,9 +61,9 @@ class _AiInsightCardState extends ConsumerState<AiInsightCard>
                   children: [
                     Row(
                       children: [
-                        Text('AI Insight', style: textTheme.titleMedium),
+                        Text('AI Coach Suggestion', style: textTheme.titleMedium),
                         const SizedBox(width: 8),
-                        if (!insight.isLoading)
+                        if (!insightState.isLoading && !isIdle)
                           Container(
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 8, vertical: 2),
@@ -66,7 +71,7 @@ class _AiInsightCardState extends ConsumerState<AiInsightCard>
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(20),
                             ),
-                            child: Text('New',
+                            child: Text('Live',
                                 style: textTheme.labelMedium?.copyWith(
                                     color:
                                         Theme.of(context).colorScheme.primary)),
@@ -76,10 +81,10 @@ class _AiInsightCardState extends ConsumerState<AiInsightCard>
                     const SizedBox(height: 6),
                     AnimatedSwitcher(
                       duration: const Duration(milliseconds: 300),
-                      child: insight.when(
+                      child: insightState.when(
                         loading: () => const _ShimmerLines(key: ValueKey('l')),
                         error: (_, __) => Text(
-                          'AI insight unavailable — tap for full weekly review',
+                          'AI insight unavailable — tap to retry',
                           key: const ValueKey('e'),
                           style: textTheme.bodyMedium,
                         ),
@@ -95,12 +100,12 @@ class _AiInsightCardState extends ConsumerState<AiInsightCard>
                     const SizedBox(height: 6),
                     Row(
                       children: [
-                        Text('View details',
+                        Text(isIdle ? 'Tap to generate' : 'View full review',
                             style: textTheme.labelMedium?.copyWith(
                                 color: Theme.of(context).colorScheme.primary,
                                 fontWeight: FontWeight.w700)),
                         const SizedBox(width: 4),
-                        Icon(Icons.arrow_forward,
+                        Icon(isIdle ? Icons.touch_app : Icons.arrow_forward,
                             size: 14,
                             color: Theme.of(context).colorScheme.primary),
                       ],

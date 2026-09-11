@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:habitflow/core/router/daily_workout_schedule_route.dart';
+import 'package:habitflow/core/utils/date_utils.dart';
 import 'package:habitflow/data/models/daily_workout.dart';
 import 'package:habitflow/features/ai_plan/screens/daily_exercise_card.dart';
 import 'package:habitflow/features/personal_profile/screens/widgets/edit_profile_screen.dart';
@@ -215,7 +216,7 @@ List<RouteBase> buildAppRoutes() {
     ),
     GoRoute(
       path: AppRoutes.barcode,
-      builder: (_, __) => BarcodeScannerScreen(day: DateTime.now()),
+      builder: (_, __) => BarcodeScannerScreen(day: DateTime.now().normalized),
     ),
     GoRoute(
       path: AppRoutes.privacy,

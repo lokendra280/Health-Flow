@@ -14,7 +14,7 @@ class PersonalProfile {
     this.age,
     this.gender,
     this.height,
-    this.heightUnit = 'cm',
+    this.heightUnit = 'ft',
     this.activityLevel,
     this.fitnessLevel,
     this.dietPreference,

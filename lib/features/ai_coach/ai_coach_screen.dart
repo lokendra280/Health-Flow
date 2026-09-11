@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:habitflow/core/utils/date_utils.dart';
 import 'package:habitflow/features/habit_tracking/providers/habit_tracking_provider.dart';
+import 'package:habitflow/features/steps/ui/step_count_provider.dart';
 import '../../data/models/tracking_models.dart';
 import '../../data/repositories/journey_repository_provider.dart';
 import '../ai_plan/providers/ai_plan_provider.dart';
@@ -14,17 +16,21 @@ class AiCoachController extends Notifier<List<ChatMessage>> {
 
   /// Phase 6 data_context: pulls real profile/goal/habits/logs/weight
   /// history/measurements/check-ins instead of a placeholder string.
-  String _buildContext() {
+  Future<String> _buildContext() async {
     final repo = ref.read(journeyRepositoryProvider);
     final goal = ref.read(journeySetupControllerProvider);
     final profile = ref.read(personalProfileControllerProvider);
     final habits = ref.read(habitControllerProvider);
-    final today = DateTime.now();
+    final today = DateTime.now().normalized;
+
+    // Fetch real-time steps from health provider
+    final steps = await ref.read(todayStepsProvider.future);
+
     return '''
-Goal: ${goal.type}, ${goal.currentWeight}->${goal.targetWeight} ${goal.weightUnit}, target date ${goal.targetDate}.
+Goal: ${goal.type}, ${goal.currentWeight}->${goal.targetWeight} ${goal.weightUnit}, target date ${goal.targetDate?.normalized}.
 Profile: age ${profile.age}, ${profile.gender}, activity ${profile.activityLevel}, diet ${profile.dietPreference}, allergies ${profile.foodAllergies}.
 Habits: ${habits.map((h) => '${h.name} (streak ${h.streak})').join(', ')}.
-Today: water ${repo.waterFor(today)}ml, steps ${repo.stepsFor(today)}, food ${repo.foodEntriesFor(today).map((f) => f.name).join(', ')}.
+Today: water ${repo.waterFor(today)}ml, steps $steps, food ${repo.foodEntriesFor(today).map((f) => f.name).join(', ')}.
 Body measurements logged: ${repo.measurements().length}. Recent check-in: ${repo.checkInFor(today)?.mood}.
 ''';
   }
@@ -33,8 +39,9 @@ Body measurements logged: ${repo.measurements().length}. Recent check-in: ${repo
     state = [...state, ChatMessage(role: 'user', content: text)];
     await ref.read(journeyRepositoryProvider).saveChatHistory(state);
     final gemini = ref.read(geminiServiceProvider);
+    final contextSummary = await _buildContext();
     final reply =
-        await gemini.chat(history: state, contextSummary: _buildContext());
+        await gemini.chat(history: state, contextSummary: contextSummary);
     state = [...state, ChatMessage(role: 'assistant', content: reply)];
     await ref.read(journeyRepositoryProvider).saveChatHistory(state);
   }

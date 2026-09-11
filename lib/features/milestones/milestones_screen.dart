@@ -18,7 +18,7 @@ class MilestoneController extends Notifier<List<Milestone>> {
         type: type, label: label, percent: percent, achievedAt: DateTime.now());
     await ref.read(journeyRepositoryProvider).addMilestone(m);
     state = [...state, m];
-    await ref.read(notificationServiceProvider).celebrate(percent ?? 0);
+    // await ref.read(notificationServiceProvider).celebrate(percent ?? 0);
   }
 
   /// weight_loss progress milestones (25/50/75/100%).

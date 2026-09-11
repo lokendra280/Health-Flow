@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:habitflow/core/constants/app_string.dart';
 import 'package:habitflow/core/constants/constant_assets.dart';
 import 'package:habitflow/core/constants/size_constant.dart';
+import 'package:habitflow/core/providers/date_provider.dart';
+import 'package:habitflow/features/ai_plan/providers/ai_plan_provider.dart';
 import 'package:habitflow/features/ai_plan/providers/weekly_workout_provider.dart';
 import 'package:habitflow/features/dashboard/screens/widgets/feedback_promot.dart';
 import 'package:habitflow/features/dashboard/screens/widgets/feedback_sheet.dart';
@@ -98,16 +100,20 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       const WeeklyGoalsRow(),
       SBC.lHM,
       TodayCalendarStrip(
-        selectedDate: DateTime.now(),
+        selectedDate: ref.watch(currentDateProvider),
         onDateSelected: (DateTime value) {},
       ),
       SBC.lHM,
 
       Consumer(
         builder: (context, ref, _) {
-          final summary = ref.watch(weeklyWorkoutSummaryProvider);
+          final summary = ref.watch(todayWorkoutSummaryProvider);
+          final plan = ref.watch(aiPlanControllerProvider);
+          final todayWorkout = plan?.workoutForWeekday(DateTime.now());
+          final isRestDay = todayWorkout?.isRestDay ?? true;
+
           return PersonalWorkoutCard(
-            title: "My personal WorkOut",
+            title: isRestDay ? "Today is Rest Day" : "Today's Workout",
             completedCount: summary.completedCount,
             totalCount: summary.totalCount,
             onTap: () {

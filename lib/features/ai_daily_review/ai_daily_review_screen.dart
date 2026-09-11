@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:habitflow/features/food_tracking/providers/food_tracking_provider.dart';
 import 'package:habitflow/features/habit_tracking/providers/habit_tracking_provider.dart';
+import 'package:habitflow/features/sleep_tracking/providers/sleep_provider.dart';
 import 'package:habitflow/features/water_tracking/providers/water_tracking_provider.dart';
 import '../ai_plan/providers/ai_plan_provider.dart';
 import '../journey_setup/providers/journey_setup_provider.dart';

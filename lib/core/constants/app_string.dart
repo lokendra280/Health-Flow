@@ -21,4 +21,17 @@ class AppString {
   static const resendCode = "Resend code";
   static const otpHint = "Enter 6-digit code";
   static const caloriesTracking = "Daily Calories Tracking";
+
+  // Water tracking
+  static const waterTracking = "Water Tracking";
+  static const waterToday = "Water today";
+  static const glassesOf = "of";
+  static const glassesSuffix = "glasses";
+  static const waterGoalHitTitle = "Goal complete";
+  static const waterGoalHitSubtitle = "Nice work today!";
+  static const mlLeftSuffix = "ml left to hit your goal";
+  static const keepGoing = "Keep going";
+  static const addGlass = "Add glass";
+  static const quickAdd = "Quick add";
+  static const weeklyIntake = "Weekly Intake";
 }

@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "1087687861671-b4lljudk29t9e680frlgtibqjb3vbatt.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.healthflow",
+            "certificate_hash": "4cc6ae1469c0661ce5e47ce4f28a5dc8c0cb5484"
+          }
+        },
+        {
           "client_id": "1087687861671-kec6quofhb4abdkgskgia0imf1m9in4u.apps.googleusercontent.com",
           "client_type": 3
         }

@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:habitflow/core/providers/date_provider.dart';
 import 'package:habitflow/features/ai_plan/providers/ai_plan_provider.dart';
 import 'package:habitflow/features/steps/controller/step_count_controller.dart';
 import 'package:habitflow/features/steps/models/step_counter_summery.dart';
@@ -50,7 +51,8 @@ final stepsForDateProvider =
 });
 
 final todayStepsProvider = FutureProvider.autoDispose<int>((ref) {
-  return ref.watch(stepsForDateProvider(_todayKey()).future);
+  final today = ref.watch(currentDateProvider);
+  return ref.watch(stepsForDateProvider(today).future);
 });
 
 final weeklyStepsProvider =

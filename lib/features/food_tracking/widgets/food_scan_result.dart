@@ -88,10 +88,10 @@ class _FoodScanResultSheetState extends ConsumerState<FoodScanResultSheet> {
                         borderRadius: BorderRadius.circular(14)),
                   ),
                   onPressed: () async {
-                    for (final e in _editable!) {
+                    if (_editable != null && _editable!.isNotEmpty) {
                       await ref
                           .read(foodLogProvider(widget.day).notifier)
-                          .addEntry(e);
+                          .addEntries(_editable!);
                     }
                     if (context.mounted) Navigator.of(context).pop();
                   },

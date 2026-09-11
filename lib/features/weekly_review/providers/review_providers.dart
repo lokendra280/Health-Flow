@@ -1,4 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:habitflow/core/utils/date_utils.dart';
+import 'package:habitflow/data/models/tracking_models.dart';
 import 'package:habitflow/data/repositories/journey_repository_provider.dart';
 import 'package:habitflow/features/ai_plan/providers/ai_plan_provider.dart';
 import 'package:habitflow/features/steps/ui/step_count_provider.dart';
@@ -19,16 +21,16 @@ Future<PeriodMetrics> _computeMetrics(
 
   final stepsFutures = <Future<int>>[];
   for (var i = 0; i < days; i++) {
-    final day = start.add(Duration(days: i));
+    final day = start.add(Duration(days: i)).normalized;
     stepsFutures.add(ref.watch(stepsForDateProvider(day).future));
     water.add((repo.waterFor(day) as int).toDouble());
     sleep.add((repo.sleepFor(day)?.hours as double?) ?? 0);
     workouts += (repo.workoutsFor(day) as List).length;
 
-    final foodEntries = repo.foodEntriesFor(day) as List;
+    final List<FoodEntry> foodEntries = repo.foodEntriesFor(day);
     final dayCalories = foodEntries.fold<double>(
       0,
-      (sum, e) => sum + ((e.calories as double?) ?? 0),
+      (sum, e) => sum + e.calories,
     );
     calories.add(dayCalories);
   }
@@ -77,17 +79,18 @@ final monthlyMetricsProvider = FutureProvider.autoDispose
 
 final dailyHeadlineMetricsProvider = FutureProvider.autoDispose
     .family<DailyHeadline, DateTime>((ref, day) async {
+  final normalizedDay = day.normalized;
   final repo = ref.watch(journeyRepositoryProvider);
-  final steps = await ref.watch(stepsForDateProvider(day).future);
+  final steps = await ref.watch(stepsForDateProvider(normalizedDay).future);
   final stepGoal = ref.watch(stepGoalProvider);
 
   final plan = ref.watch(aiPlanControllerProvider);
   final calorieTarget = plan?.calorieTarget ?? 2000;
 
-  final foodEntries = repo.foodEntriesFor(day) as List;
+  final List<FoodEntry> foodEntries = repo.foodEntriesFor(normalizedDay);
   final calories = foodEntries.fold<double>(
     0,
-    (sum, e) => sum + ((e.calories as double?) ?? 0),
+    (sum, e) => sum + e.calories,
   );
 
   return DailyHeadline(
@@ -98,9 +101,9 @@ final dailyHeadlineMetricsProvider = FutureProvider.autoDispose
     calorieTarget: calorieTarget,
     calorieProgress:
         calorieTarget > 0 ? (calories / calorieTarget).clamp(0.0, 1.0) : 0.0,
-    water: repo.waterFor(day),
-    sleepHours: (repo.sleepFor(day)?.hours as double?) ?? 0,
-    workoutCount: (repo.workoutsFor(day) as List).length,
+    water: repo.waterFor(normalizedDay),
+    sleepHours: (repo.sleepFor(normalizedDay)?.hours as double?) ?? 0,
+    workoutCount: (repo.workoutsFor(normalizedDay) as List).length,
   );
 });
 
@@ -108,22 +111,23 @@ final dailyHeadlineMetricsProvider = FutureProvider.autoDispose
 /// the manually-logged Hive value.
 final dailyReviewProvider =
     FutureProvider.autoDispose.family<String, DateTime>((ref, day) async {
+  final normalizedDay = day.normalized;
   final repo = ref.watch(journeyRepositoryProvider);
   final gemini = ref.watch(geminiServiceProvider);
-  final steps = await ref.watch(stepsForDateProvider(day).future);
+  final steps = await ref.watch(stepsForDateProvider(normalizedDay).future);
 
   final goal = repo.loadGoal();
   final habits = repo.habits();
 
   return gemini.reviewDay(
     weight: goal.currentWeight,
-    food: repo.foodEntriesFor(day),
-    water: repo.waterFor(day),
+    food: repo.foodEntriesFor(normalizedDay),
+    water: repo.waterFor(normalizedDay),
     steps: steps,
-    workouts: repo.workoutsFor(day),
-    sleep: repo.sleepFor(day),
+    workouts: repo.workoutsFor(normalizedDay),
+    sleep: repo.sleepFor(normalizedDay),
     habits: habits,
-    checkIn: repo.checkInFor(day),
+    checkIn: repo.checkInFor(normalizedDay),
   );
 });
 

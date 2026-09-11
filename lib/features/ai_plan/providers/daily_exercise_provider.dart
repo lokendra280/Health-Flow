@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:habitflow/data/models/daily_workout.dart';
 import 'package:habitflow/data/repositories/journey_repository_provider.dart';
 import 'package:habitflow/features/ai_plan/providers/ai_plan_provider.dart';
+import 'package:habitflow/features/ai_plan/providers/weekly_workout_provider.dart';
 
 class DailyExerciseState {
   final DailyWorkout? workout; // null if plan has no entry for today
@@ -58,5 +59,6 @@ final toggleExerciseProvider = Provider<Future<void> Function(String)>((ref) {
     final repo = ref.read(journeyRepositoryProvider);
     await repo.toggleExerciseDone(DateTime.now(), exerciseName);
     ref.invalidate(dailyExerciseProvider);
+    ref.invalidate(todayWorkoutSummaryProvider);
   };
 });

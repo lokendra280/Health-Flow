@@ -75,7 +75,7 @@ class _DaySection extends ConsumerWidget {
                 _Pill(text: 'Rest day', color: AppColors.textMuted)
               else if (day.focus != null)
                 _Pill(text: day.focus!, color: AppColors.primary),
-              const Spacer(),
+              // const Spacer(),
               // if (!day.isRestDay && day.exercises.isNotEmpty)
               //   Text(
               //     isFuture
@@ -106,6 +106,7 @@ class _DaySection extends ConsumerWidget {
                           ref.invalidate(completedExercisesForDateProvider(
                               dateKeyFor(date)));
                           ref.invalidate(weeklyWorkoutSummaryProvider);
+                          ref.invalidate(todayWorkoutSummaryProvider);
                         },
                 ),
               ),

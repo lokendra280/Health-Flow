@@ -40,11 +40,6 @@ class GeminiService {
     final stepTargetValue = PlanCalculator.stepTarget(
         activityLevel: profile.activityLevel ?? '', goalType: goal.type);
 
-    // Drives both the exercise mix and the wording the model uses — a
-    // "weight loss" plan should lean cardio-heavy, "weight gain"
-    // should lean strength-heavy, everything else stays balanced.
-    // Adjust the matching strings below if JourneyGoal.type uses
-    // different literal values than these three.
     final direction = _goalDirection(goal.type);
 
     final prompt = _buildPrompt(
@@ -95,8 +90,6 @@ class GeminiService {
           'Gemini returned non-JSON output: $e\n$text');
     }
 
-    // Deterministic values always win over whatever the model echoed back —
-    // never trust unverified LLM arithmetic for numbers that gate real behavior.
     planJson['calorieTarget'] = calorieTargetValue;
     planJson['waterTarget'] = waterTargetValue;
     planJson['stepTarget'] = stepTargetValue;
@@ -104,9 +97,6 @@ class GeminiService {
     return AiPlan.fromJson(planJson);
   }
 
-  /// Coarse three-way bucket used purely to steer wording and exercise
-  /// mix. Update the match strings if your JourneyGoal.type enum/string
-  /// values differ from 'lose_weight' / 'gain_weight'.
   String _goalDirection(String goalType) {
     final t = goalType.toLowerCase();
     if (t.contains('lose') || t.contains('loss')) return 'lose_weight';
@@ -141,87 +131,44 @@ class GeminiService {
 
     return '''
 You are a fitness and nutrition planning assistant. This is general wellness
-guidance, not medical advice. Keep everything simple and directly actionable
-— this plan revolves around three numbers the user will track every day:
-calories eaten, steps walked, and water drunk.
+guidance, not medical advice. Keep everything simple and directly actionable.
 
-These three daily targets have already been calculated using standard
-formulas — return them in your JSON EXACTLY as given, do not recalculate them:
-- calorieTarget: $calorieTarget kcal/day
-- waterTarget: $waterTarget ml/day
-- stepTarget: $stepTarget steps/day
+calorieTarget: $calorieTarget kcal/day
+waterTarget: $waterTarget ml/day
+stepTarget: $stepTarget steps/day
 
 $directionGuidance
 
-User goal:
-- type: ${goal.type}
-- starting weight: ${goal.startingWeight} ${goal.weightUnit}
-- current weight: ${goal.currentWeight} ${goal.weightUnit}
-- target weight: ${goal.targetWeight} ${goal.weightUnit}
-- target date: ${goal.targetDate?.toIso8601String()}
+User goal: ${goal.type}
+User profile: ${profile.age}, ${profile.gender}, ${profile.height} ${profile.heightUnit}, ${profile.activityLevel}
 
-User profile:
-- age: ${profile.age}
-- gender: ${profile.gender}
-- height: ${profile.height} ${profile.heightUnit}
-- activity level: ${profile.activityLevel}
-- fitness level: ${profile.fitnessLevel}
-- diet preference: ${profile.dietPreference}
-- food allergies: ${profile.foodAllergies.join(', ')}
-- food restrictions: ${profile.foodRestrictions.join(', ')}
-
-Build a full 7-day exercise schedule (Monday through Sunday) matching the
-guidance above and the user's "${profile.fitnessLevel}" fitness level.
-Assume bodyweight/basic gym equipment unless told otherwise. Include 2-4
-rest days spread across the week (not all consecutive) appropriate for
-their fitness level — beginners need more rest days than advanced users.
-On non-rest days, give a short "focus" label (e.g. "Upper body strength",
-"Cardio", "Full body", "Legs & core") and list 3-5 specific exercises with
-concrete sets/reps or duration for that day.
-
-For recommendedHabits, keep it simple and directly tied to the three
-numbers above plus consistency — always include exactly these four, in
-this order, filling in the target numbers:
-1. "Log your meals — aim for $calorieTarget kcal/day"
-2. "Walk $stepTarget steps/day"
-3. "Drink $waterTarget ml of water/day"
-4. One short habit about consistency/sleep appropriate for a
-   "${profile.fitnessLevel}" fitness level (e.g. sleep, stretching, or a
-   rest-day reminder) — do not repeat the three above.
-
-Respond with ONLY a JSON object matching exactly this shape (no markdown
-fences, no commentary). weeklySchedule MUST have exactly 7 entries, one
-per day, in order Monday through Sunday:
+Respond with ONLY a JSON object matching exactly this shape:
 {
   "calorieTarget": $calorieTarget,
   "waterTarget": $waterTarget,
   "stepTarget": $stepTarget,
   "goalDirection": "$direction",
-  "weeklySchedule": [
-    {
-      "day": "Monday",
-      "isRestDay": false,
-      "focus": "<e.g. 'Upper body strength'>",
-      "exercises": [
-        {"name": "<exercise name>", "sets": "<e.g. '3 sets x 12 reps' or '20 min'>", "category": "strength" | "cardio" | "mobility"}
-      ]
-    },
-    {"day": "Tuesday", "isRestDay": true, "focus": null, "exercises": []}
-  ],
-  "sleepTarget": "<e.g. '7-9_hours'>",
+  "weeklySchedule": [...],
+  "sleepTarget": "7-9_hours",
   "mealTracking": true,
-  "recommendedHabits": [
-    "Log your meals — aim for $calorieTarget kcal/day",
-    "Walk $stepTarget steps/day",
-    "Drink $waterTarget ml of water/day",
-    "<one short consistency/sleep habit>"
-  ],
-  "milestones": [<3-5 short milestone strings tied to the goal>]
+  "recommendedHabits": [...],
+  "milestones": [...]
 }
 ''';
   }
 
-  /// Phase 6: plain-text summary of a day's tracked data.
+  /// Generates a motivational nudge when a user goes over a healthy limit.
+  Future<String> generateNudgeMessage(String type, double value) async {
+    final prompt = '''
+Generate a single, warm, and highly motivational sentence for a user who has $type value of $value.
+- If type is "calories" and > 3000: Encourage them to use that extra energy for a great workout tomorrow, rather than making them feel bad.
+- If type is "water" and > 4000: Congratulate them on being a hydration pro but remind them they are well-covered for today.
+- If type is "workout" and > 2: Celebrate their amazing dedication and suggest a well-earned rest or light stretch.
+Keep it under 20 words. No "depressing" or "guilt-tripping" language. Be a happy coach.
+''';
+    return _plainTextRequest(prompt);
+  }
+
   Future<String> reviewDay({
     double? weight,
     required List<FoodEntry> food,
@@ -233,57 +180,38 @@ per day, in order Monday through Sunday:
     DailyCheckIn? checkIn,
   }) async {
     final prompt = '''
-Summarize this day of health tracking data in 3-4 encouraging sentences, then
-give 1-2 concrete suggestions for tomorrow. Not medical advice.
+Summarize this day of health tracking data in 3-4 encouraging sentences.
 weight: $weight, water: ${water}ml, steps: $steps,
 food: ${food.map((f) => '${f.name} (${f.calories}kcal)').join(', ')},
 workouts: ${workouts.map((w) => '${w.type} ${w.minutes}min').join(', ')},
-sleep: ${sleep?.hours}h, habits done: ${habits.where((h) => h.completedToday).length}/${habits.length},
-mood/energy/stress: ${checkIn?.mood}/${checkIn?.energy}/${checkIn?.stress}
+sleep: ${sleep?.hours}h, habits: ${habits.where((h) => h.completedToday).length}/${habits.length}
+If they exceeded 3000 kcal or 4000ml water, acknowledge it with a positive twist (e.g. "You're full of energy!" or "Hydration champion!").
 ''';
     return _plainTextRequest(prompt);
   }
 
-  /// Phase 6: AI coach chat turn.
-  Future<String> chat(
-      {required List<ChatMessage> history,
-      required String contextSummary}) async {
-    final convo = history.map((m) => '${m.role}: ${m.content}').join('\n');
-    final prompt =
-        'You are a supportive weight-loss coach. Context: $contextSummary\n\nConversation so far:\n$convo\n\nRespond as the assistant, briefly and warmly. Not medical advice.';
+  Future<String> summarizeWeek(Map<String, dynamic> metrics) {
+    final prompt = '''
+Summarize this week of tracking data in 3-4 sentences. Note one strength and one area to improve.
+Metrics: $metrics
+If any day had >3000 kcal, suggest eating nutrient-dense whole foods tomorrow to feel light and energized.
+Keep the tone happy and supportive.
+''';
     return _plainTextRequest(prompt);
   }
-
-  /// Phase 7: weekly/monthly text summaries.
-  Future<String> summarizeWeek(Map<String, dynamic> metrics) => _plainTextRequest(
-      'Summarize this week of weight-loss tracking data in 3-4 sentences, note one strength and one area to improve: $metrics');
 
   Future<String> summarizeMonth(Map<String, dynamic> metrics) => _plainTextRequest(
       'Summarize this month of weight-loss tracking data in 4-5 sentences with strengths, weaknesses and recommendations: $metrics');
 
-  Future<String> _plainTextRequest(String prompt) async {
-    final response = await http.post(
-      _endpoint,
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({
-        'contents': [
-          {
-            'parts': [
-              {'text': prompt}
-            ]
-          }
-        ],
-        'generationConfig': {'temperature': 0.6},
-      }),
-    );
-    if (response.statusCode != 200) {
-      throw GeminiServiceException(
-          'Gemini request failed (${response.statusCode}): ${response.body}');
-    }
-    final decoded = jsonDecode(response.body) as Map<String, dynamic>;
-    final text =
-        decoded['candidates']?[0]?['content']?['parts']?[0]?['text'] as String?;
-    return text ?? '(no response)';
+  /// Phase 6: AI coach chat turn.
+  Future<String> chat({
+    required List<ChatMessage> history,
+    required String contextSummary,
+  }) async {
+    final convo = history.map((m) => '${m.role}: ${m.content}').join('\n');
+    final prompt =
+        'You are a supportive weight-loss coach. Context: $contextSummary\n\nConversation so far:\n$convo\n\nRespond as the assistant, briefly and warmly. Not medical advice.';
+    return _plainTextRequest(prompt);
   }
 
   /// Phase 4b: AI food scanner — sends a photo, gets back candidate food
@@ -343,6 +271,34 @@ Use your best visual estimate for portion size. If nothing edible is visible, re
     return list
         .map((e) => FoodEntry.fromJson(Map<String, dynamic>.from(e as Map)))
         .toList();
+  }
+
+  Future<String> _plainTextRequest(String prompt) async {
+    try {
+      final response = await http.post(
+        _endpoint,
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({
+          'contents': [
+            {
+              'parts': [
+                {'text': prompt}
+              ]
+            }
+          ],
+          'generationConfig': {'temperature': 0.7},
+        }),
+      );
+      if (response.statusCode != 200) {
+        return "You're doing great! Keep up the consistency.";
+      }
+      final decoded = jsonDecode(response.body) as Map<String, dynamic>;
+      final text =
+          decoded['candidates']?[0]?['content']?['parts']?[0]?['text'] as String?;
+      return text?.trim() ?? "Keep going, you're on the right track!";
+    } catch (_) {
+      return "Awesome progress today! Let's keep this momentum going.";
+    }
   }
 }
 

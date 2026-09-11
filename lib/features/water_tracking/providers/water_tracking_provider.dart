@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:habitflow/core/providers/date_provider.dart';
 import '../../../data/repositories/journey_repository_provider.dart';
 import '../../ai_plan/providers/ai_plan_provider.dart';
 
@@ -9,21 +10,14 @@ import '../../ai_plan/providers/ai_plan_provider.dart';
 const int kMlPerGlass = 250;
 
 class WaterController extends Notifier<int> {
-  DateTime _trackedDay = DateTime.now();
-
   @override
   int build() {
-    _trackedDay = DateTime.now();
-    return ref.read(journeyRepositoryProvider).waterFor(_trackedDay);
+    final today = ref.watch(currentDateProvider);
+    return ref.read(journeyRepositoryProvider).waterFor(today);
   }
 
   Future<void> quickAdd(int ml) async {
-    final today = DateTime.now();
-    if (today.day != _trackedDay.day) {
-      _trackedDay = today;
-      state = ref.read(journeyRepositoryProvider).waterFor(today);
-    }
-
+    final today = ref.read(currentDateProvider);
     state += ml;
     await ref.read(journeyRepositoryProvider).saveWater(today, state);
     final target = ref.read(aiPlanControllerProvider)?.waterTarget ?? 2000;

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:habitflow/core/utils/date_utils.dart';
 import 'package:habitflow/features/food_tracking/widgets/food_camera_screen.dart';
 
 class QuickScanRow extends ConsumerWidget {
@@ -8,9 +9,11 @@ class QuickScanRow extends ConsumerWidget {
   const QuickScanRow({super.key, required this.day});
 
   void _openInAppCamera(BuildContext context) {
+    // Always use the latest normalized date when opening the camera
+    final normalizedDay = DateTime.now().normalized;
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => FoodCameraScreen(day: day),
+        builder: (_) => FoodCameraScreen(day: normalizedDay),
         fullscreenDialog: true,
       ),
     );

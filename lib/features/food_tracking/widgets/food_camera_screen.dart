@@ -2,12 +2,9 @@ import 'dart:io';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:habitflow/ads/config/rewarded_ad_service.dart';
 import 'package:habitflow/features/food_tracking/widgets/food_scan_result.dart';
 
-/// In-app camera for food scanning — a live preview rendered inside this
-/// screen (not a jump out to the OS camera app), matching the same
-/// pattern as BarcodeScannerScreen. Capturing a photo pushes straight
-/// into FoodScanResultSheet without ever leaving the app's UI.
 class FoodCameraScreen extends ConsumerStatefulWidget {
   final DateTime day;
   const FoodCameraScreen({super.key, required this.day});
@@ -100,7 +97,22 @@ class _FoodCameraScreenState extends ConsumerState<FoodCameraScreen>
       final file = await controller.takePicture();
       if (!mounted) return;
 
-      final result = await showModalBottomSheet<void>(
+      // Gate the actual food logging behind a rewarded ad. Failing to load
+      // fails OPEN (still lets them log) so a monetization hiccup never
+      // blocks a core feature — flip this if you'd rather hard-block instead.
+      final adResult = await RewardedAdService.instance.show();
+      if (!mounted) return;
+
+      if (adResult == RewardedAdResult.dismissedWithoutReward) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Watch the full ad to log this meal.'),
+          ),
+        );
+        return; // stay on the camera screen so they can retry
+      }
+
+      await showModalBottomSheet<void>(
         context: context,
         isScrollControlled: true,
         builder: (_) => FoodScanResultSheet(
@@ -196,9 +208,12 @@ class _FoodCameraScreenState extends ConsumerState<FoodCameraScreen>
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        const Text(
-                          'Center your food in the frame',
-                          style: TextStyle(color: Colors.white70, fontSize: 13),
+                        Text(
+                          _capturing
+                              ? 'Preparing your scan…'
+                              : 'Center your food in the frame',
+                          style: const TextStyle(
+                              color: Colors.white70, fontSize: 13),
                         ),
                         const SizedBox(height: 16),
                         GestureDetector(

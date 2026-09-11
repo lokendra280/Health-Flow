@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:habitflow/core/utils/date_utils.dart';
 import 'package:habitflow/data/services/barcode_food_service.dart';
 import '../../../data/models/tracking_models.dart';
 import '../../../data/repositories/journey_repository_provider.dart';
@@ -21,14 +22,24 @@ final foodLogProvider =
 class FoodLogController extends FamilyNotifier<List<FoodEntry>, DateTime> {
   @override
   List<FoodEntry> build(DateTime day) =>
-      ref.read(journeyRepositoryProvider).foodEntriesFor(day);
+      ref.read(journeyRepositoryProvider).foodEntriesFor(day.normalized);
 
   Future<void> addEntry(FoodEntry e) async {
+    await addEntries([e]);
+  }
+
+  Future<void> addEntries(List<FoodEntry> entries) async {
+    if (entries.isEmpty) return;
     final repo = ref.read(journeyRepositoryProvider);
-    await repo.saveFoodEntry(arg, e);
-    await repo.recordRecentFood(e.name);
+    final normalizedDay = arg.normalized;
+
+    for (final e in entries) {
+      await repo.saveFoodEntry(normalizedDay, e);
+      await repo.recordRecentFood(e.name);
+    }
+
     await repo.recordActivity('meal_tracking');
-    state = [...state, e];
+    state = [...state, ...entries];
   }
 }
 

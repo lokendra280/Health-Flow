@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:habitflow/core/constants/app_string.dart';
+import 'package:habitflow/core/utils/date_utils.dart';
 import 'package:habitflow/features/ai_plan/providers/ai_plan_provider.dart';
 import 'package:habitflow/features/food_tracking/providers/food_tracking_provider.dart';
 import 'package:habitflow/features/food_tracking/widgets/calories_card.dart';
@@ -21,7 +22,7 @@ class FoodTrackingScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final day = DateTime.now();
+    final day = DateTime.now().normalized;
     final entries = ref.watch(foodLogProvider(day));
     final text = Theme.of(context).textTheme;
 
